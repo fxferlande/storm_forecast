@@ -1,4 +1,4 @@
-from keras.layers import Concatenate, Dropout, BatchNormalization, Conv2D, Activation, Dense, Input, MaxPooling2D, Flatten, Dropout
+from keras.layers import Concatenate, Dropout, BatchNormalization, Conv3D, Activation, Dense, Input, MaxPooling3D, Flatten, Dropout
 from keras.models import Model
 from keras.callbacks import EarlyStopping
 from keras.regularizers import l2
@@ -6,23 +6,24 @@ from sklearn.base import BaseEstimator
 import numpy as np
 
 class Regressor(BaseEstimator):
-    def __init__(self):
+    def __init__(self, epochs = 250):
+        self.epochs = epochs
         l2_weight = 0.0001
-        model_in = Input(shape=(11, 11, 7))
+        model_in = Input(shape=(10, 11, 11, 7))
         scalar_in = Input(shape=(9,))
 
         model = BatchNormalization()(model_in)
-        model = Conv2D(64, (5, 5), padding="same")(model)
+        model = Conv3D(64, (5, 5, 5), padding="same")(model)
         model = Activation("relu")(model)
-        model = MaxPooling2D()(model)
+        model = MaxPooling3D()(model)
 
         model = BatchNormalization()(model)
-        model = Conv2D(128, (3,3), padding="same")(model)
+        model = Conv3D(128, (3,3,3), padding="same")(model)
         model = Activation("relu")(model)
 
-        model = MaxPooling2D()(model)
+        model = MaxPooling3D()(model)
         model = BatchNormalization()(model)
-        model = Conv2D(128, (3,3), padding="same")(model)
+        model = Conv3D(128, (3,3,3), padding="same")(model)
         model = Activation("relu")(model)
         model = Flatten()(model)
 
@@ -50,7 +51,8 @@ class Regressor(BaseEstimator):
     def fit(self, X, y):
         _, x = X
         y = y - x[:,1]
-        self.cnn_model.fit(X, y, epochs=250, batch_size=128, verbose=1)
+        # Remove return for submission
+        return self.cnn_model.fit(X, y, epochs=self.epochs, batch_size=128, verbose=1)
 
     def predict(self, X):
         _, x = X
