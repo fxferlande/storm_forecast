@@ -60,7 +60,7 @@ def save_score(path, function, train_true, train_pred, test_true, test_pred):
 	f.close()
 
 if __name__=="__main__":
-	do_cv = True
+	do_cv = False
 	do_feature_ext = False
 	X_train, y_train = _read_data("..", "train")
 	X_test, y_test = _read_data("..", "test")
@@ -77,7 +77,7 @@ if __name__=="__main__":
 	else:
 		X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]
 		X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_scalar.npy")]
-	model = Regressor(epochs = 350)
+	model = Regressor(epochs = 50)
 	history = model.fit(X_array, y_train, do_cv)
 	pred_train = model.predict(X_array)
 	pred_test = model.predict(X_array_test)
