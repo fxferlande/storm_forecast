@@ -48,11 +48,11 @@ class Regressor(BaseEstimator):
         print(self.cnn_model.summary())
         return
 
-    def fit(self, X, y):
+    def fit(self, X, y, do_cv=False):
         _, x = X
         y = y - x[:,1]
         # Remove return for submission
-        return self.cnn_model.fit(X, y, epochs=self.epochs, batch_size=128, verbose=1)
+        return self.cnn_model.fit(X, y, epochs=self.epochs, batch_size=128, verbose=1, validation_split=0.2)
 
     def predict(self, X):
         _, x = X

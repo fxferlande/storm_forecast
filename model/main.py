@@ -38,13 +38,18 @@ def _read_data(path, dataset):
 	# y[y == 0] = 10
 	return X, y
 
-def plot_history(path, history):
+def plot_history(path, history, do_cv=False):
 	keys = list(history.history.keys())
 	plt.figure()
-	plt.plot(history.history[keys[-1]])
+	plt.plot(history.history[keys[0]])
 	plt.title('model loss')
-	plt.ylabel('accuracy')
+	plt.ylabel('loss')
 	plt.xlabel('epoch')
+	if do_cv:
+		plt.plot(history.history[keys[1]])
+		plt.title('validation loss')
+		plt.ylabel('loss')
+		plt.xlabel('epoch')
 	plt.savefig(path+"model_loss.png")
 	plt.close()
 
@@ -55,6 +60,7 @@ def save_score(path, function, train_true, train_pred, test_true, test_pred):
 	f.close()
 
 if __name__=="__main__":
+	do_cv = True
 	do_feature_ext = False
 	X_train, y_train = _read_data("..", "train")
 	X_test, y_test = _read_data("..", "test")
@@ -71,10 +77,10 @@ if __name__=="__main__":
 	else:
 		X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]
 		X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_scalar.npy")]
-	model = Regressor(epochs = 100)
-	history = model.fit(X_array, y_train)
+	model = Regressor(epochs = 350)
+	history = model.fit(X_array, y_train, do_cv)
 	pred_train = model.predict(X_array)
 	pred_test = model.predict(X_array_test)
 
-	plot_history(output_path, history)
+	plot_history(output_path, history, do_cv)
 	save_score(output_path, lambda x,y: np.sqrt(mean_squared_error(x,y)), y_train, pred_train, y_test, pred_test)
