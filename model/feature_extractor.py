@@ -38,10 +38,10 @@ class FeatureExtractor(object):
             x[:, :, :, :] = np.nan
             i = 0
             for id in ids:
-                for index in range(1, len_sequences[id]+1):
+                for index in range(1, len_sequences[id] + 1):
                     bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(
                         0, index - self.max_len):index]
-                    x[i, self.max_len-len(bloc):self.max_len, :,
+                    x[i, self.max_len - len(bloc):self.max_len, :,
                       :] = bloc.values.reshape(-1, 11, 11)
                     i += 1
             to_append = (x - self.scaling_values.loc[field, "mean"]
@@ -51,22 +51,23 @@ class FeatureExtractor(object):
             print("Field ", field, "just done")
         norm_data = np.stack(field_grids, axis=-1)
 
-        X_df = self.scalar_norm.transform(X_df[self.scalar_fields])
-        field_grids = []
+        scalar = self.scalar_norm.transform(X_df[self.scalar_fields])
+        scalar = pd.DataFrame(scalar, columns=self.scalar_fields)
+        scalar["stormid"] = X_df["stormid"]
+        final_scalar = np.empty((len(scalar), self.max_len, len(self.scalar_fields)))
         for field in self.scalar_fields:
-            f_data = X_df[[field, "stormid"]]
-            x = np.empty(shape=(len(X_df), self.max_len))
-            x[:, :] = np.nan
-            i = 0
+            f_data = scalar[[field, "stormid"]]
+            bloc = np.empty((len(scalar), self.max_len))
             for id in ids:
-                for index in range(1, len_sequences[id]+1):
-                    bloc = f_data[f_data["stormid"] == id][field].iloc[max(
-                        0, index - self.max_len):index]
-                    x[i, self.max_len-len(bloc):self.max_len] = bloc.values.reshape(-1,)
-                    i += 1
-            field_grids.append(x)
-            field_grids[-1][np.isnan(field_grids[-1])] = 0
+                ligne = f_data[f_data["stormid"] == id][field]
+                seq_line = np.empty((len(ligne), self.max_len))
+                for i in range(self.max_len):
+                    seq_line[:, self.max_len - 1 -
+                             i] = np.array(([0] * i + list(ligne))[0:len(ligne)])
+                pos = list(X_df["stormid"]).index(id)
+                bloc[pos:pos + len(ligne), :] = seq_line
+            final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
-        norm_scalar = np.stack(field_grids, axis=-1)
+        norm_scalar = final_scalar
 
         return [norm_data, norm_scalar]
