@@ -2,16 +2,17 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
+
 class FeatureExtractor(object):
-    def __init__(self):
+    def __init__(self, len_sequences=5):
         self.scalar_fields = ['instant_t', 'windspeed', 'latitude', 'longitude',
-                       'hemisphere', 'Jday_predictor', 'initial_max_wind',
-                       'max_wind_change_12h', 'dist2land']
-        self.spatial_fields = ["u", "v", "sst", "slp", "hum","z","vo700"]
+                              'hemisphere', 'Jday_predictor', 'initial_max_wind',
+                              'max_wind_change_12h', 'dist2land']
+        self.spatial_fields = ["u", "v", "sst", "slp", "hum", "z", "vo700"]
         self.scaling_values = pd.DataFrame(index=self.spatial_fields,
                                            columns=["mean", "std"], dtype=float)
         self.scalar_norm = StandardScaler()
-        self.max_len = 10
+        self.max_len = len_sequences
         # Eventuellement fixer max_len dans le fit avec la distribution
         # self.max_len = max(X_df["stormid"].value_counts().quantile(0.5))
 
@@ -30,20 +31,42 @@ class FeatureExtractor(object):
         field_grids = []
         ids = X_df.stormid.unique()
         len_sequences = X_df["stormid"].value_counts()
-        for field in ["u", "v", "sst", "slp", "hum","z","vo700"]:
+        for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
             f_data = X_df[list(f_cols) + ["stormid"]]
-            x = np.empty(shape=(len(X_df),10,11,11))
+            x = np.empty(shape=(len(X_df), self.max_len, 11, 11))
             x[:, :, :, :] = np.nan
             i = 0
             for id in ids:
-                for index in range(1,len_sequences[id]+1):
-                    bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(0, index - self.max_len):index]
-                    x[i,0:len(bloc),:,:] = bloc.values.reshape(-1,11,11)
-                    i+=1
-            field_grids.append((x - self.scaling_values.loc[field, "mean"]) / self.scaling_values.loc[field, "std"])
+                for index in range(1, len_sequences[id]+1):
+                    bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(
+                        0, index - self.max_len):index]
+                    x[i, self.max_len-len(bloc):self.max_len, :,
+                      :] = bloc.values.reshape(-1, 11, 11)
+                    i += 1
+            to_append = (x - self.scaling_values.loc[field, "mean"]
+                         ) / self.scaling_values.loc[field, "std"]
+            field_grids.append(to_append)
             field_grids[-1][np.isnan(field_grids[-1])] = 0
             print("Field ", field, "just done")
         norm_data = np.stack(field_grids, axis=-1)
-        norm_scalar = self.scalar_norm.transform(X_df[self.scalar_fields])
+
+        X_df = self.scalar_norm.transform(X_df[self.scalar_fields])
+        field_grids = []
+        for field in self.scalar_fields:
+            f_data = X_df[[field, "stormid"]]
+            x = np.empty(shape=(len(X_df), self.max_len))
+            x[:, :] = np.nan
+            i = 0
+            for id in ids:
+                for index in range(1, len_sequences[id]+1):
+                    bloc = f_data[f_data["stormid"] == id][field].iloc[max(
+                        0, index - self.max_len):index]
+                    x[i, self.max_len-len(bloc):self.max_len] = bloc.values.reshape(-1,)
+                    i += 1
+            field_grids.append(x)
+            field_grids[-1][np.isnan(field_grids[-1])] = 0
+            print("Field ", field, "just done")
+        norm_scalar = np.stack(field_grids, axis=-1)
+
         return [norm_data, norm_scalar]
