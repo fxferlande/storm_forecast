@@ -42,15 +42,16 @@ def _read_data(path, dataset):
 def plot_history(path, history, do_cv=False):
     keys = list(history.history.keys())
     plt.figure()
-    plt.plot(history.history[keys[0]])
-    plt.title('model loss')
+    plt.plot(history.history[keys[0]], label="train")
+    plt.title('Loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
     if do_cv:
-        plt.plot(history.history[keys[1]])
-        plt.title('validation loss')
+        plt.plot(history.history[keys[1]], label="test")
+        plt.title('Loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
+    plt.legend()
     plt.savefig(path+"model_loss.png")
     plt.close()
 
@@ -70,8 +71,8 @@ def save_score(path, function, train_true, train_pred, test_true, test_pred):
 
 if __name__ == "__main__":
     do_cv = True
-    epoch = 200
-    do_feature_ext = False
+    epoch = 400
+    do_feature_ext = True
     len_sequences = 5
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
@@ -80,11 +81,11 @@ if __name__ == "__main__":
     feature_ext.fit(X_train, y_train)
     if do_feature_ext:
         X_array = feature_ext.transform(X_train)
-        np.save("../data/train_norm", X_array[0])
-        np.save("../data/train_scalar", X_array[1])
+        # np.save("../data/train_norm", X_array[0])
+        # np.save("../data/train_scalar", X_array[1])
         X_array_test = feature_ext.transform(X_test)
-        np.save("../data/test_norm", X_array_test[0])
-        np.save("../data/test_scalar", X_array_test[1])
+        # np.save("../data/test_norm", X_array_test[0])
+        # np.save("../data/test_scalar", X_array_test[1])
         print("Arrays processed and saved")
     else:
         X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]

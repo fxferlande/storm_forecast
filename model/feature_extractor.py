@@ -31,24 +31,31 @@ class FeatureExtractor(object):
         field_grids = []
         ids = X_df.stormid.unique()
         len_sequences = X_df["stormid"].value_counts()
+        # for field in self.spatial_fields:
+        #     f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
+        #     f_data = X_df[list(f_cols) + ["stormid"]]
+        #     x = np.empty(shape=(len(X_df), self.max_len, 11, 11))
+        #     x[:, :, :, :] = np.nan
+        #     i = 0
+        #     for id in ids:
+        #         for index in range(1, len_sequences[id] + 1):
+        #             bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(
+        #                 0, index - self.max_len):index]
+        #             x[i, self.max_len - len(bloc):self.max_len, :,
+        #               :] = bloc.values.reshape(-1, 11, 11)
+        #             i += 1
+        #     to_append = (x - self.scaling_values.loc[field, "mean"]
+        #                  ) / self.scaling_values.loc[field, "std"]
+        #     field_grids.append(to_append)
+        #     field_grids[-1][np.isnan(field_grids[-1])] = 0
+        #     print("Field ", field, "just done")
+        # norm_data = np.stack(field_grids, axis=-1)
         for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
-            f_data = X_df[list(f_cols) + ["stormid"]]
-            x = np.empty(shape=(len(X_df), self.max_len, 11, 11))
-            x[:, :, :, :] = np.nan
-            i = 0
-            for id in ids:
-                for index in range(1, len_sequences[id] + 1):
-                    bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(
-                        0, index - self.max_len):index]
-                    x[i, self.max_len - len(bloc):self.max_len, :,
-                      :] = bloc.values.reshape(-1, 11, 11)
-                    i += 1
-            to_append = (x - self.scaling_values.loc[field, "mean"]
-                         ) / self.scaling_values.loc[field, "std"]
-            field_grids.append(to_append)
+            f_data = X_df[f_cols].values.reshape(-1, 11, 11)
+            field_grids.append(
+                (f_data - self.scaling_values.loc[field, "mean"]) / self.scaling_values.loc[field, "std"])
             field_grids[-1][np.isnan(field_grids[-1])] = 0
-            print("Field ", field, "just done")
         norm_data = np.stack(field_grids, axis=-1)
 
         scalar = self.scalar_norm.transform(X_df[self.scalar_fields])
@@ -68,6 +75,7 @@ class FeatureExtractor(object):
                 bloc[pos:pos + len(ligne), :] = seq_line
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
-        norm_scalar = final_scalar
+        print("NaN values found: ", np.isnan(final_scalar).any())
+        norm_scalar = np.nan_to_num(final_scalar)
 
         return [norm_data, norm_scalar]
