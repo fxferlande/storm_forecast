@@ -69,11 +69,11 @@ def save_score(path, function, train_true, train_pred, test_true, test_pred):
 
 
 if __name__ == "__main__":
-    do_cv = True
+    do_cv = False
     epoch = 300
     do_feature_ext = True
     save_feature_ext = False
-    len_sequences = 5
+    len_sequences = 10
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
 
