@@ -35,7 +35,6 @@ def _read_data(path, dataset):
     X = X.drop(X.index[i_toerase])
     X.index = range(len(X))
     y = np.delete(y, i_toerase, axis=0)
-    # y[y == 0] = 10
     return X, y
 
 
@@ -71,8 +70,9 @@ def save_score(path, function, train_true, train_pred, test_true, test_pred):
 
 if __name__ == "__main__":
     do_cv = True
-    epoch = 400
+    epoch = 300
     do_feature_ext = True
+    save_feature_ext = False
     len_sequences = 5
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
@@ -81,15 +81,18 @@ if __name__ == "__main__":
     feature_ext.fit(X_train, y_train)
     if do_feature_ext:
         X_array = feature_ext.transform(X_train)
-        # np.save("../data/train_norm", X_array[0])
-        # np.save("../data/train_scalar", X_array[1])
         X_array_test = feature_ext.transform(X_test)
-        # np.save("../data/test_norm", X_array_test[0])
-        # np.save("../data/test_scalar", X_array_test[1])
-        print("Arrays processed and saved")
+        print("Arrays processed")
+        if save_feature_ext:
+            np.save("../data/train_norm", X_array[0])
+            np.save("../data/train_scalar", X_array[1])
+            np.save("../data/test_norm", X_array_test[0])
+            np.save("../data/test_scalar", X_array_test[1])
     else:
-        X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]
-        X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_scalar.npy")]
+        X_array = [np.load("../data/train_norm.npy"),
+                   np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]
+        X_array_test = [np.load("../data/test_norm.npy"),
+                        np.load("../data/test_norm.npy"), np.load("../data/test_scalar.npy")]
     model = Regressor(epochs=epoch, len_sequences=len_sequences)
     plot_model(output_path, model.cnn_model)
     history = model.fit(X_array, y_train, do_cv)

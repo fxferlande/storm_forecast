@@ -1,22 +1,69 @@
-import pandas as pd
+import pickle
 import numpy as np
-from sklearn.preprocessing import StandardScaler
+import pandas as pd
+pd.set_option('mode.chained_assignment', None)
 
 
 class FeatureExtractor(object):
     def __init__(self, len_sequences=5):
-        self.scalar_fields = ['instant_t', 'windspeed', 'latitude', 'longitude',
-                              'hemisphere', 'Jday_predictor', 'initial_max_wind',
+        self.constant_fields = ["initial_max_wind", "basin", "nature"]
+        self.scalar_fields = ['instant_t', 'windspeed', 'latitude', 'longitude', 'Jday_predictor',
                               'max_wind_change_12h', 'dist2land']
         self.spatial_fields = ["u", "v", "sst", "slp", "hum", "z", "vo700"]
-        self.scaling_values = pd.DataFrame(index=self.spatial_fields,
-                                           columns=["mean", "std"], dtype=float)
-        self.scalar_norm = StandardScaler()
+        self.scaling_values = pd.DataFrame(index=self.spatial_fields + self.scalar_fields +
+                                           self.constant_fields, columns=["mean", "std"],
+                                           dtype=float)
         self.max_len = len_sequences
-        # Eventuellement fixer max_len dans le fit avec la distribution
-        # self.max_len = max(X_df["stormid"].value_counts().quantile(0.5))
+
+    def bearing(self, line):
+        """Compute bearing in degrees for one line of dataframe
+
+            brearing = atan2(
+                sin(Δlon).cos(lat2),
+                cos(lat1).sin(lat2) − sin(lat1).cos(lat2).cos(Δlon)
+            )
+
+        Source: https://www.movable-type.co.uk/scripts/latlong.html
+
+        Parmeters
+        ---------
+        lon1, lat1, lon2, lat2: list-like
+            coordinates in degrees
+
+        Returns
+        -------
+        bearing: list-like
+            bearing in degrees in [-180, 180]
+        """
+        if line.instant_t == 0:
+            lon1, lat1 = line["longitude"], line["latitude"]
+            lon2, lat2 = line["longitude"], line["latitude"]
+        else:
+            lon1, lat1 = line["longitude"], line["latitude"]
+            lon2, lat2 = line["longitude_before"], line["latitude_before"]
+
+        lon1, lat1, lon2, lat2 = map(np.radians, [lon1, lat1, lon2, lat2])
+        delta_lon = lon2 - lon1
+        x = np.sin(delta_lon) * np.cos(lat2)
+        y = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(delta_lon)
+
+        bearing = np.degrees(np.arctan2(x, y))
+
+        return bearing
+
+    def compute_bearing(self, X_df):
+        X_df["longitude_before"] = X_df["longitude"].shift()
+        X_df["latitude_before"] = X_df["latitude"].shift()
+        X_df["bearing"] = X_df.apply(self.bearing, axis=1)
+        X_df["bearing_cos"] = np.cos(X_df["bearing"])
+        X_df["bearing_sin"] = np.sin(X_df["bearing"])
+        X_df.drop("bearing", axis=1, inplace=True)
+        X_df.drop("longitude_before", axis=1, inplace=True)
+        X_df.drop("latitude_before", axis=1, inplace=True)
+        return X_df
 
     def fit(self, X_df, y):
+        print("Starting FeatureExtractor fit")
         field_grids = []
         for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
@@ -25,45 +72,38 @@ class FeatureExtractor(object):
         for f, field in enumerate(self.spatial_fields):
             self.scaling_values.loc[field, "mean"] = np.nanmean(field_grids[f])
             self.scaling_values.loc[field, "std"] = np.nanstd(field_grids[f])
-        self.scalar_norm.fit(X_df[self.scalar_fields])
+        X_df = self.compute_bearing(X_df)
+        self.scalar_fields += ["bearing_cos", "bearing_sin"]
+        for field in self.scalar_fields:
+            self.scaling_values.loc[field, "mean"] = X_df[field].mean()
+            self.scaling_values.loc[field, "std"] = X_df[field].std()
+        for field in self.constant_fields:
+            self.scaling_values.loc[field, "mean"] = X_df[field].mean()
+            self.scaling_values.loc[field, "std"] = X_df[field].std()
+        print("Fitting FeatureExtractor done")
 
     def transform(self, X_df):
+        print("Starting FeatureExtractor transform")
         field_grids = []
         ids = X_df.stormid.unique()
-        len_sequences = X_df["stormid"].value_counts()
-        # for field in self.spatial_fields:
-        #     f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
-        #     f_data = X_df[list(f_cols) + ["stormid"]]
-        #     x = np.empty(shape=(len(X_df), self.max_len, 11, 11))
-        #     x[:, :, :, :] = np.nan
-        #     i = 0
-        #     for id in ids:
-        #         for index in range(1, len_sequences[id] + 1):
-        #             bloc = f_data[f_data["stormid"] == id][f_cols].iloc[max(
-        #                 0, index - self.max_len):index]
-        #             x[i, self.max_len - len(bloc):self.max_len, :,
-        #               :] = bloc.values.reshape(-1, 11, 11)
-        #             i += 1
-        #     to_append = (x - self.scaling_values.loc[field, "mean"]
-        #                  ) / self.scaling_values.loc[field, "std"]
-        #     field_grids.append(to_append)
-        #     field_grids[-1][np.isnan(field_grids[-1])] = 0
-        #     print("Field ", field, "just done")
-        # norm_data = np.stack(field_grids, axis=-1)
         for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
             f_data = X_df[f_cols].values.reshape(-1, 11, 11)
             field_grids.append(
-                (f_data - self.scaling_values.loc[field, "mean"]) / self.scaling_values.loc[field, "std"])
+                (f_data - self.scaling_values.loc[field, "mean"]) / self.scaling_values.loc[field,
+                                                                                            "std"])
             field_grids[-1][np.isnan(field_grids[-1])] = 0
+            print("Field ", field, "just done")
         norm_data = np.stack(field_grids, axis=-1)
+        print("NaN values found in spatial: ", np.isnan(norm_data).any())
 
-        scalar = self.scalar_norm.transform(X_df[self.scalar_fields])
-        scalar = pd.DataFrame(scalar, columns=self.scalar_fields)
+        scalar = self.compute_bearing(X_df)
         scalar["stormid"] = X_df["stormid"]
         final_scalar = np.empty((len(scalar), self.max_len, len(self.scalar_fields)))
         for field in self.scalar_fields:
             f_data = scalar[[field, "stormid"]]
+            f_data[field] = (f_data[field] - self.scaling_values.loc[field, "mean"]) / \
+                self.scaling_values.loc[field, "std"]
             bloc = np.empty((len(scalar), self.max_len))
             for id in ids:
                 ligne = f_data[f_data["stormid"] == id][field]
@@ -75,7 +115,18 @@ class FeatureExtractor(object):
                 bloc[pos:pos + len(ligne), :] = seq_line
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
-        print("NaN values found: ", np.isnan(final_scalar).any())
+        print("NaN values found in scalar: ", np.isnan(final_scalar).any())
+        if np.isnan(final_scalar).any():
+            np.save('/home/ubuntu/documents/storm_forecast/data/scalar_nan', final_scalar)
+            X_df.to_csv('/home/ubuntu/documents/storm_forecast/data/df_nan.csv', index=None)
+            with open('/home/ubuntu/documents/storm_forecast/data/fe', 'wb') as fe:
+                pickle.dump(self.scaling_values, fe)
         norm_scalar = np.nan_to_num(final_scalar)
 
-        return [norm_data, norm_scalar]
+        norm_constant = X_df[self.constant_fields]
+        for field in self.constant_fields:
+            norm_constant[field] = (norm_constant[field] - self.scaling_values.loc[field, "mean"]) / \
+                self.scaling_values.loc[field, "std"]
+        norm_constant = norm_constant.values
+        print("FeatureExtractor transform done")
+        return [norm_data, norm_scalar, norm_constant]
