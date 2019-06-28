@@ -3,3 +3,4 @@ venv
 .venv
 activate.sh
 storm_forecast-master
+notebooks
