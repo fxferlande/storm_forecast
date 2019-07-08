@@ -4,3 +4,5 @@ venv
 activate.sh
 storm_forecast-master
 notebooks
+model/save
+model/save_cluster

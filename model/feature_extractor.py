@@ -9,7 +9,7 @@ pd.set_option('mode.chained_assignment', None)
 
 
 class FeatureExtractor(object):
-    def __init__(self, len_sequences=5):
+    def __init__(self, len_sequences=4):
         self.constant_fields = ["initial_max_wind", "basin", "nature"]
         self.scalar_fields = ['instant_t', 'windspeed', 'latitude', 'longitude', 'Jday_predictor',
                               'max_wind_change_12h', 'dist2land']
@@ -21,7 +21,7 @@ class FeatureExtractor(object):
             prediction_length=1,
             freq="4H",
             trainer=Trainer(ctx="cpu",
-                            epochs=300,
+                            epochs=100,
                             learning_rate=1e-4,
                             num_batches_per_epoch=128))
         self.max_len = len_sequences
@@ -105,6 +105,21 @@ class FeatureExtractor(object):
             self.scalar_fields += ["gluonts_pred"]
         return X_df
 
+    def cross_features(self, X_df):
+        X_df["mw12_lon"] = X_df["max_wind_change_12h"]*X_df["longitude"]
+        if "mw12_lon" not in self.scalar_fields:
+            self.scalar_fields.append("mw12_lon")
+        X_df["mw12_lat"] = X_df["max_wind_change_12h"]*X_df["latitude"]
+        if "mw12_lat" not in self.scalar_fields:
+            self.scalar_fields.append("mw12_lat")
+        X_df["mw12_imw"] = - X_df["max_wind_change_12h"]*X_df["initial_max_wind"]
+        if "mw12_imw" not in self.scalar_fields:
+            self.scalar_fields.append("mw12_imw")
+        # X_df["dist_imw"] = X_df["dist2land"]*X_df["initial_max_wind"]
+        # if "dist_imw" not in self.scalar_fields:
+        #     self.scalar_fields.append("dist_imw")
+        return X_df
+
     def fit(self, X_df, y):
         print("Starting FeatureExtractor fit")
         self.scaling_values.loc["windspeed", "mean"] = X_df["windspeed"].mean()
@@ -123,6 +138,7 @@ class FeatureExtractor(object):
             self.scaling_values.loc[field, "std"] = np.nanstd(field_grids[f])
         X_df = self.compute_bearing(X_df)
         X_df = self.compute_gluonts(X_df)
+        X_df = self.cross_features(X_df)
         for field in self.scalar_fields:
             self.scaling_values.loc[field, "mean"] = X_df[field].mean()
             self.scaling_values.loc[field, "std"] = X_df[field].std()
@@ -147,6 +163,7 @@ class FeatureExtractor(object):
 
         scalar = self.compute_bearing(X_df)
         scalar = self.compute_gluonts(scalar)
+        scalar = self.cross_features(scalar)
         scalar["stormid"] = X_df["stormid"]
         final_scalar = np.empty((len(scalar), self.max_len, len(self.scalar_fields)))
         for field in self.scalar_fields:
@@ -167,4 +184,4 @@ class FeatureExtractor(object):
                 self.scaling_values.loc[field, "std"]
         norm_constant = norm_constant.values
         print("FeatureExtractor transform done")
-        return [norm_data, norm_scalar, norm_constant]
+        return [norm_data, norm_data, norm_scalar, norm_scalar, norm_constant]

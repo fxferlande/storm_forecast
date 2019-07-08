@@ -52,6 +52,7 @@ notebook==5.7.8
 numpy==1.14.6
 pandas==0.24.2
 pandocfilters==1.4.2
+parameterized==0.7.0
 parso==0.4.0
 pexpect==4.7.0
 pickleshare==0.7.5
@@ -84,6 +85,7 @@ tensorflow-gpu==1.13.1
 termcolor==1.1.0
 terminado==0.8.2
 testpath==0.4.2
+Theano==1.0.4
 tornado==6.0.2
 tqdm==4.32.2
 traitlets==4.3.2

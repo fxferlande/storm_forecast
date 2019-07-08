@@ -70,13 +70,15 @@ def plot_model(path, model):
             model.summary()
 
 
-def save_score(path, functions, train_true, train_pred, test_true, test_pred, name="scores"):
+def save_score(path, functions, train_true, train_pred, test_true, test_pred, name="scores",
+               message=""):
     f = open(path + name + '.txt', 'w+')
     for function in functions:
         f.write("Scores train " + function.__name__ + ": " +
                 str(function(train_true, train_pred)) + "\n")
         f.write("Scores test " + function.__name__ + ": " +
                 str(function(test_true, test_pred)) + "\n")
+    f.write(message)
     f.close()
 
 
@@ -98,6 +100,7 @@ if __name__ == "__main__":
     epoch = 250
     do_feature_ext = True
     save_feature_ext = True
+    message = "essai CNN LSTM en //"
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
 
@@ -112,17 +115,15 @@ if __name__ == "__main__":
         if save_feature_ext:
             np.save("../data/train_norm", X_array[0])
             np.save("../data/train_scalar", X_array[2])
-            np.save("../data/train_const", X_array[4])
+            np.save("../data/train_const", X_array[3])
             np.save("../data/test_norm", X_array_test[0])
             np.save("../data/test_scalar", X_array_test[2])
-            np.save("../data/test_const", X_array_test[4])
+            np.save("../data/test_const", X_array_test[3])
     else:
         X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_norm.npy"),
-                   np.load("../data/train_scalar.npy"), np.load("../data/train_scalar.npy"),
-                   np.load("../data/train_const.npy")]
+                   np.load("../data/train_scalar.npy"), np.load("../data/train_const.npy")]
         X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_norm.npy"),
-                        np.load("../data/test_scalar.npy"), np.load("../data/test_scalar.npy"),
-                        np.load("../data/test_const.npy")]
+                        np.load("../data/test_scalar.npy"), np.load("../data/test_const.npy")]
 
     model = Regressor(epochs=epoch, len_sequences=len_sequences)
     plot_model(output_path, model.cnn_model)
@@ -132,4 +133,5 @@ if __name__ == "__main__":
     pred_test = model.predict(X_array_test)
 
     plot_history(output_path, history, do_cv)
-    save_score(output_path, [rmse, r2_score], y_train, pred_train, y_test, pred_test)
+    save_score(output_path, [rmse, r2_score], y_train,
+               pred_train, y_test, pred_test, message=message)
