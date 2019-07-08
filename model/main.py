@@ -1,11 +1,20 @@
+from feature_extractor import FeatureExtractor
+from regressor import Regressor
 from contextlib import redirect_stdout
+import os
 import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_squared_error
-from regressor import Regressor
-from feature_extractor import FeatureExtractor
+from shutil import copyfile
+from sklearn.metrics import mean_squared_error, r2_score
+
+
+from numpy.random import seed
+seed(42)
+np.random.seed(42)
+os.environ['PYTHONHASHSEED'] = str(42)
+
 
 output_path = "output/"
 _forecast_h = 24
@@ -38,7 +47,7 @@ def _read_data(path, dataset):
     return X, y
 
 
-def plot_history(path, history, do_cv=False):
+def plot_history(path, history, do_cv=False, name="model_loss"):
     keys = list(history.history.keys())
     plt.figure()
     plt.plot(history.history[keys[0]], label="train")
@@ -51,7 +60,7 @@ def plot_history(path, history, do_cv=False):
         plt.ylabel('loss')
         plt.xlabel('epoch')
     plt.legend()
-    plt.savefig(path+"model_loss.png")
+    plt.savefig(path + name + ".png")
     plt.close()
 
 
@@ -61,44 +70,66 @@ def plot_model(path, model):
             model.summary()
 
 
-def save_score(path, function, train_true, train_pred, test_true, test_pred):
-    f = open(path + 'scores.txt', 'w+')
-    f.write("Scores train: " + str(function(train_true, train_pred)) + "\n")
-    f.write("Scores test: " + str(function(test_true, test_pred)) + "\n")
+def save_score(path, functions, train_true, train_pred, test_true, test_pred, name="scores"):
+    f = open(path + name + '.txt', 'w+')
+    for function in functions:
+        f.write("Scores train " + function.__name__ + ": " +
+                str(function(train_true, train_pred)) + "\n")
+        f.write("Scores test " + function.__name__ + ": " +
+                str(function(test_true, test_pred)) + "\n")
     f.close()
+
+
+def save_files():
+    copyfile('/home/ubuntu/documents/storm_forecast/model/main.py',
+             '/home/ubuntu/documents/storm_forecast/model/output/main.py')
+    copyfile('/home/ubuntu/documents/storm_forecast/model/regressor.py',
+             '/home/ubuntu/documents/storm_forecast/model/output/regressor.py')
+    copyfile('/home/ubuntu/documents/storm_forecast/model/feature_extractor.py',
+             '/home/ubuntu/documents/storm_forecast/model/output/feature_extractor.py')
+
+
+def rmse(x, y):
+    return np.sqrt(mean_squared_error(x, y))
 
 
 if __name__ == "__main__":
     do_cv = True
-    epoch = 300
+    epoch = 250
     do_feature_ext = True
-    save_feature_ext = False
-    len_sequences = 5
+    save_feature_ext = True
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
 
-    feature_ext = FeatureExtractor(len_sequences=len_sequences)
-    feature_ext.fit(X_train, y_train)
+    len_sequences = 4
+
     if do_feature_ext:
+        feature_ext = FeatureExtractor(len_sequences=len_sequences)
+        feature_ext.fit(X_train, y_train)
         X_array = feature_ext.transform(X_train)
         X_array_test = feature_ext.transform(X_test)
         print("Arrays processed")
         if save_feature_ext:
             np.save("../data/train_norm", X_array[0])
-            np.save("../data/train_scalar", X_array[1])
+            np.save("../data/train_scalar", X_array[2])
+            np.save("../data/train_const", X_array[4])
             np.save("../data/test_norm", X_array_test[0])
-            np.save("../data/test_scalar", X_array_test[1])
+            np.save("../data/test_scalar", X_array_test[2])
+            np.save("../data/test_const", X_array_test[4])
     else:
-        X_array = [np.load("../data/train_norm.npy"),
-                   np.load("../data/train_norm.npy"), np.load("../data/train_scalar.npy")]
-        X_array_test = [np.load("../data/test_norm.npy"),
-                        np.load("../data/test_norm.npy"), np.load("../data/test_scalar.npy")]
+        X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_norm.npy"),
+                   np.load("../data/train_scalar.npy"), np.load("../data/train_scalar.npy"),
+                   np.load("../data/train_const.npy")]
+        X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_norm.npy"),
+                        np.load("../data/test_scalar.npy"), np.load("../data/test_scalar.npy"),
+                        np.load("../data/test_const.npy")]
+
     model = Regressor(epochs=epoch, len_sequences=len_sequences)
     plot_model(output_path, model.cnn_model)
+    save_files()
     history = model.fit(X_array, y_train, do_cv)
     pred_train = model.predict(X_array)
     pred_test = model.predict(X_array_test)
 
     plot_history(output_path, history, do_cv)
-    save_score(output_path, lambda x, y: np.sqrt(mean_squared_error(x, y)),
-               y_train, pred_train, y_test, pred_test)
+    save_score(output_path, [rmse, r2_score], y_train, pred_train, y_test, pred_test)
