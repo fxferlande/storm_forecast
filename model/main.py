@@ -99,12 +99,12 @@ if __name__ == "__main__":
     do_cv = True
     epoch = 250
     do_feature_ext = True
-    save_feature_ext = True
-    message = "essai CNN LSTM en //"
+    save_feature_ext = False
+    message = "grid search reg"
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
 
-    len_sequences = 4
+    len_sequences = 5
 
     if do_feature_ext:
         feature_ext = FeatureExtractor(len_sequences=len_sequences)
