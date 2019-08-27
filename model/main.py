@@ -1,19 +1,19 @@
-from feature_extractor import FeatureExtractor
-from regressor import Regressor
-from contextlib import redirect_stdout
 import os
+import pdb
 import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from contextlib import redirect_stdout
 from shutil import copyfile
 from sklearn.metrics import mean_squared_error, r2_score
-
+from feature_extractor import FeatureExtractor
+from regressor import Regressor
 
 from numpy.random import seed
 seed(42)
 np.random.seed(42)
-os.environ['PYTHONHASHSEED'] = str(42)
+os.environ['PYTHONHASHSEED'] = str(0)
 
 
 output_path = "output/"
@@ -78,7 +78,7 @@ def save_score(path, functions, train_true, train_pred, test_true, test_pred, na
                 str(function(train_true, train_pred)) + "\n")
         f.write("Scores test " + function.__name__ + ": " +
                 str(function(test_true, test_pred)) + "\n")
-    f.write(message)
+    f.write(message + "\n")
     f.close()
 
 
@@ -97,14 +97,15 @@ def rmse(x, y):
 
 if __name__ == "__main__":
     do_cv = True
-    epoch = 250
     do_feature_ext = True
     save_feature_ext = False
-    message = "grid search reg"
+    message = "attention module"
+
     X_train, y_train = _read_data("..", "train")
     X_test, y_test = _read_data("..", "test")
 
-    len_sequences = 5
+    epoch = 200
+    len_sequences = 10
 
     if do_feature_ext:
         feature_ext = FeatureExtractor(len_sequences=len_sequences)
@@ -113,25 +114,23 @@ if __name__ == "__main__":
         X_array_test = feature_ext.transform(X_test)
         print("Arrays processed")
         if save_feature_ext:
-            np.save("../data/train_norm", X_array[0])
-            np.save("../data/train_scalar", X_array[2])
-            np.save("../data/train_const", X_array[3])
-            np.save("../data/test_norm", X_array_test[0])
-            np.save("../data/test_scalar", X_array_test[2])
-            np.save("../data/test_const", X_array_test[3])
+            # np.save("../data/train_norm", X_array[0])
+            np.save("../data/train_scalar", X_array[1])
+            np.save("../data/train_const", X_array[0])
+            # np.save("../data/test_norm", X_array_test[0])
+            np.save("../data/test_scalar", X_array_test[1])
+            np.save("../data/test_const", X_array_test[0])
     else:
-        X_array = [np.load("../data/train_norm.npy"), np.load("../data/train_norm.npy"),
-                   np.load("../data/train_scalar.npy"), np.load("../data/train_const.npy")]
-        X_array_test = [np.load("../data/test_norm.npy"), np.load("../data/test_norm.npy"),
-                        np.load("../data/test_scalar.npy"), np.load("../data/test_const.npy")]
-
-    model = Regressor(epochs=epoch, len_sequences=len_sequences)
-    plot_model(output_path, model.cnn_model)
-    save_files()
+        X_array = [np.load("../data/train_const.npy"), np.load("../data/train_scalar.npy")]
+        X_array_test = [np.load("../data/test_const.npy"), np.load("../data/test_scalar.npy")]
+    model = Regressor(epochs=epoch, num_scalar=X_array[1].shape[2],
+                      num_const=X_array[2].shape[1], len_sequences=len_sequences)
     history = model.fit(X_array, y_train, do_cv)
     pred_train = model.predict(X_array)
     pred_test = model.predict(X_array_test)
 
+    plot_model(output_path, model.cnn_model)
+    save_files()
     plot_history(output_path, history, do_cv)
     save_score(output_path, [rmse, r2_score], y_train,
                pred_train, y_test, pred_test, message=message)
