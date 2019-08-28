@@ -1,9 +1,7 @@
 import time
-import pdb
 from sklearn.base import BaseEstimator
 from keras.layers import Concatenate, Dropout, BatchNormalization, Activation, Dense, Input, \
-    Flatten, Conv2D, Conv1D, MaxPooling2D, MaxPooling1D, LSTM, Bidirectional, Permute, \
-    TimeDistributed, Reshape, Bidirectional, RepeatVector, Multiply, Lambda, Add
+    Flatten, Conv2D, Conv1D, MaxPooling2D, LSTM, Permute, RepeatVector, Multiply, Lambda, Add
 from keras.models import Model
 from keras.regularizers import l2
 from concrete_dropout import ConcreteDropout
@@ -11,12 +9,12 @@ import keras.backend as K
 
 
 class Regressor(BaseEstimator):
-    def __init__(self, num_scalar, num_const, epochs=250, len_sequences=5, reg=1, dropout=0.3):
+    def __init__(self, num_scalar=12, num_const=7, epochs=200, len_sequences=10, dropout=0.3):
         self.epochs = epochs
         self.len_sequences = len_sequences
         len_lstm = 4
 
-        l2_weight = reg
+        l2_weight = 1
         l2_lstm = 10
         l2_conv = 10
 

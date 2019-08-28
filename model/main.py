@@ -126,6 +126,7 @@ if __name__ == "__main__":
     model = Regressor(epochs=epoch, num_scalar=X_array[1].shape[2],
                       num_const=X_array[2].shape[1], len_sequences=len_sequences)
     history = model.fit(X_array, y_train, do_cv)
+    pdb.set_trace()
     pred_train = model.predict(X_array)
     pred_test = model.predict(X_array_test)
 
