@@ -5,7 +5,7 @@ pd.set_option('mode.chained_assignment', None)
 
 
 class FeatureExtractor(object):
-    def __init__(self, len_sequences=5):
+    def __init__(self, len_sequences=10):
         self.dummy_field = ["nature"]
         self.constant_fields = ['initial_max_wind', 'basin']
         self.scalar_fields = ['instant_t', 'windspeed', 'latitude', 'longitude',
