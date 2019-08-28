@@ -1,14 +1,6 @@
-import pdb
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelBinarizer
-from gluonts.dataset.common import ListDataset
-from gluonts.model.simple_feedforward import SimpleFeedForwardEstimator
-from gluonts.evaluation.backtest import make_evaluation_predictions
-from gluonts.trainer import Trainer
-from tsfresh import extract_features, select_features
-from tsfresh.utilities.dataframe_functions import impute
-from tsfresh.feature_extraction.settings import from_columns
 pd.set_option('mode.chained_assignment', None)
 
 
@@ -24,7 +16,6 @@ class FeatureExtractor(object):
                                            dtype=float)
         self.binarizer = {}
         self.max_len = len_sequences
-        self.tsfresh_params = []
 
     def make_sequence(self, X_df, field, normalize=True, padding_value=-100):
         ids = X_df.stormid.unique()
@@ -41,14 +32,6 @@ class FeatureExtractor(object):
             pos = list(X_df["stormid"]).index(id)
             bloc[pos:pos + len(ligne), :] = seq_line
         return bloc
-
-    def flatten_target(self, X_df, field):
-        seq = self.make_sequence(X_df, field, normalize=False)
-        list_index = [[i]*self.max_len for i in range(len(X_df))]
-        index = [item for sublist in list_index for item in sublist]
-        timesteps = list(range(1, self.max_len+1))*len(X_df)
-        final = pd.DataFrame({field: seq.flatten(), "t": timesteps, "id": index})
-        return final
 
     def bearing(self, line):
         """Compute bearing in degrees for one line of dataframe
@@ -94,27 +77,7 @@ class FeatureExtractor(object):
             self.scalar_fields += ["bearing_cos", "bearing_sin"]
         return X_df
 
-    def compute_tsfresh(self, fit, X_df, y=None):
-        temp = self.flatten_target(X_df, "windspeed")
-        if fit:
-            extracted_features = extract_features(temp, column_id="id", column_sort="t", n_jobs=4)
-            impute(extracted_features)
-            features_filtered = select_features(extracted_features, y, ml_task='regression')
-            self.kind_to_fc_parameters = from_columns(features_filtered)['windspeed']
-            self.constant_fields += list(features_filtered.columns)[1:]
-        else:
-            extracted_features = extract_features(temp, column_id="id", column_sort="t", n_jobs=4,
-                                                  default_fc_parameters=self.kind_to_fc_parameters)
-            impute(extracted_features)
-        return pd.concat([X_df, extracted_features], axis=1)
-
     def cross_features(self, X_df):
-        # X_df["mw12_lon"] = X_df["max_wind_change_12h"]*X_df["longitude"]  # a enlever
-        # if "mw12_lon" not in self.scalar_fields:
-        #     self.scalar_fields.append("mw12_lon")
-        # X_df["mw12_lat"] = X_df["max_wind_change_12h"]*X_df["latitude"]
-        # if "mw12_lat" not in self.scalar_fields:
-        #     self.scalar_fields.append("mw12_lat")
         X_df["mw12_imw"] = - X_df["max_wind_change_12h"]*X_df["initial_max_wind"]
         if "mw12_imw" not in self.scalar_fields:
             self.scalar_fields.append("mw12_imw")
@@ -124,9 +87,6 @@ class FeatureExtractor(object):
         X_df["diff_current_init"] = X_df["windspeed"] - X_df["initial_max_wind"]
         if "diff_current_init" not in self.scalar_fields:
             self.scalar_fields.append("diff_current_init")
-        # X_df["mw12_nature"] = X_df["max_wind_change_12h"]/(1+X_df["nature"])
-        # if "mw12_nature" not in self.scalar_fields:
-        #     self.scalar_fields.append("mw12_nature")
         return X_df
 
     def fit(self, X_df, y):
@@ -143,7 +103,6 @@ class FeatureExtractor(object):
             self.scaling_values.loc[field, "std"] = np.nanstd(field_grids[f])
         X_df = self.compute_bearing(X_df)
         X_df = self.cross_features(X_df)
-        # X_df = self.compute_tsfresh(True, X_df, y)
         for field in self.scalar_fields:
             self.scaling_values.loc[field, "mean"] = X_df[field].mean()
             self.scaling_values.loc[field, "std"] = X_df[field].std()
@@ -170,7 +129,6 @@ class FeatureExtractor(object):
         print("NaN values found in spatial: ", np.isnan(norm_data).any())
 
         scalar = self.compute_bearing(X_df)
-        # scalar = self.compute_gluonts(scalar)
         scalar = self.cross_features(scalar)
         scalar = scalar[self.scalar_fields]
         scalar["stormid"] = X_df["stormid"]
@@ -182,7 +140,6 @@ class FeatureExtractor(object):
         print("NaN values found in scalar: ", np.isnan(final_scalar).any())
         norm_scalar = np.nan_to_num(final_scalar)
 
-        # const = self.compute_tsfresh(False, X_df)
         norm_constant = X_df[self.constant_fields]
         for field in self.constant_fields:
             norm_constant[field] = (norm_constant[field] - self.scaling_values.loc[field, "mean"]) / \
