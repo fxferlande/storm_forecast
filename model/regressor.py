@@ -245,9 +245,13 @@ class Regressor(BaseEstimator):
                                          validation_split=0.2)
         else:
             history = self.cnn_model.fit(X, y, epochs=self.epochs, batch_size=128, verbose=1)
-        print("Training done in {}".format(time.time()-t))
+        print("Training done in {:.0f}s".format(time.time()-t))
         return history
 
     def predict(self, X):
         _, x, _ = X
-        return self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
+        nb_mean = 200
+        pred = self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
+        for i in range(nb_mean-1):
+            pred += self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
+        return np.around(pred/nb_mean, decimals=0)
