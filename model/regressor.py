@@ -9,6 +9,7 @@ import keras.backend as K
 from keras import initializers
 from keras.engine import InputSpec
 from keras.layers import Wrapper
+from keras.layers import LeakyReLU
 
 
 class ConcreteDropout(Wrapper):
@@ -136,50 +137,41 @@ class Regressor(BaseEstimator):
         scalar_in = Input(shape=(len_sequences, num_scalar))
         const_in = Input(shape=(num_const,))
 
-        # model_img = BatchNormalization()(img_in)
         model_img = img_in
         model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        # model_img = BatchNormalization()(model_img)
         model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
-        model_img = Activation("selu")(model_img)
+        model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
         model_img = Flatten()(model_img)
@@ -205,13 +197,11 @@ class Regressor(BaseEstimator):
 
         model_scalar_2 = Conv1D(64, 3, padding="same")(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
-        # model_scalar_2 = MaxPooling1D()(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
         model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(model_scalar_2)
         model_scalar_2 = Dropout(0.3)(model_scalar_2)
         model_scalar_2 = Activation("tanh")(model_scalar_2)
 
-        # model_const = BatchNormalization()(const_in)
         model_const = const_in
         model_const = Dense(64, kernel_regularizer=l2(l2_weight))(model_const)
         model_const = Activation("tanh")(model_const)
@@ -250,8 +240,9 @@ class Regressor(BaseEstimator):
 
     def predict(self, X):
         _, x, _ = X
-        nb_mean = 200
+        nb_mean = 1000
         pred = self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
         for i in range(nb_mean-1):
             pred += self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
-        return np.around(pred/nb_mean, decimals=0)
+        result = np.around(pred/nb_mean, decimals=0)
+        return result
