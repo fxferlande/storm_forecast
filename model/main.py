@@ -91,8 +91,8 @@ def save_files():
              '/home/ubuntu/documents/storm_forecast/model/output/feature_extractor.py')
 
 
-def save_model(model, name='model'):
-    model.save('{}.h5'.format(name))
+def save_model(path, model, name='model'):
+    model.save(path + '{}.h5'.format(name))
 
 
 def rmse(x, y):
@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
     plot_model(output_path, model.cnn_model)
     save_files()
-    save_model(model.cnn_model)
+    save_model(output_path, model.cnn_model)
     plot_history(output_path, history, do_cv)
     save_score(output_path, [rmse, r2_score], y_train,
                pred_train, y_test, pred_test, message=message)
