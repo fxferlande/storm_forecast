@@ -126,7 +126,6 @@ class FeatureExtractor(object):
             field_grids[-1][np.isnan(field_grids[-1])] = 0
             print("Field ", field, "just done")
         norm_image = np.stack(field_grids, axis=-1)
-        print("NaN values found in spatial: ", np.isnan(norm_image).any())
 
         scalar = self.compute_bearing(X_df)
         scalar = self.cross_features(scalar)
@@ -137,7 +136,6 @@ class FeatureExtractor(object):
             bloc = self.make_sequence(scalar, field)
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
-        print("NaN values found in scalar: ", np.isnan(final_scalar).any())
         norm_scalar = np.nan_to_num(final_scalar)
 
         norm_constant = X_df[self.constant_fields]
