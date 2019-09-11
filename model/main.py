@@ -101,8 +101,6 @@ def rmse(x, y):
 
 if __name__ == "__main__":
     do_cv = True
-    do_feature_ext = True
-    save_feature_ext = False
     message = "attention module"
 
     X_train, y_train = _read_data("..", "train")
@@ -111,22 +109,11 @@ if __name__ == "__main__":
     epoch = 200
     len_sequences = 10
 
-    if do_feature_ext:
-        feature_ext = FeatureExtractor(len_sequences=len_sequences)
-        feature_ext.fit(X_train, y_train)
-        X_array = feature_ext.transform(X_train)
-        X_array_test = feature_ext.transform(X_test)
-        print("Arrays processed")
-        if save_feature_ext:
-            # np.save("../data/train_norm", X_array[0])
-            np.save("../data/train_scalar", X_array[1])
-            np.save("../data/train_const", X_array[0])
-            # np.save("../data/test_norm", X_array_test[0])
-            np.save("../data/test_scalar", X_array_test[1])
-            np.save("../data/test_const", X_array_test[0])
-    else:
-        X_array = [np.load("../data/train_const.npy"), np.load("../data/train_scalar.npy")]
-        X_array_test = [np.load("../data/test_const.npy"), np.load("../data/test_scalar.npy")]
+    feature_ext = FeatureExtractor(len_sequences=len_sequences)
+    feature_ext.fit(X_train, y_train)
+    X_array = feature_ext.transform(X_train)
+    X_array_test = feature_ext.transform(X_test)
+
     model = Regressor(epochs=epoch, num_scalar=X_array[1].shape[2],
                       num_const=X_array[2].shape[1], len_sequences=len_sequences)
     history = model.fit(X_array, y_train, do_cv)
@@ -138,5 +125,5 @@ if __name__ == "__main__":
     save_files()
     save_model(output_path, model.cnn_model)
     plot_history(output_path, history, do_cv)
-    save_score(output_path, [rmse, r2_score], y_train,
-               pred_train, y_test, pred_test, message=message)
+    save_score(output_path, [rmse, r2_score], y_train, pred_train, y_test, pred_test,
+               message=message)
