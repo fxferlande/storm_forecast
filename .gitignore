@@ -8,3 +8,4 @@ model/save_cluster
 init
 install
 .DS_Store
+.vscode
