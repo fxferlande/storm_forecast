@@ -5,3 +5,5 @@ storm_forecast-master
 notebooks
 model/save
 model/save_cluster
+init
+install
