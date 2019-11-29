@@ -9,3 +9,4 @@ init
 install
 .DS_Store
 .vscode
+output/*
