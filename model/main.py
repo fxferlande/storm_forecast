@@ -21,7 +21,7 @@ _forecast_h = 24
 
 def _read_data(path, dataset):
     try:
-        Data = pd.read_csv(path + '/data/' + dataset + '.csv').head(100)
+        Data = pd.read_csv(path + '/data/' + dataset + '.csv')
     except IOError:
         raise IOError("Data not found")
 
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     X_train, y_train = _read_data(".", "train")
     X_test, y_test = _read_data(".", "test")
 
-    epoch = 2
+    epoch = 200
     len_sequences = 10
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
