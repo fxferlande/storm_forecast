@@ -5,7 +5,7 @@ pipeline: install   ## run main project pipeline
 	python model/main.py
 
 # PROJECT SETUP COMMANDS
-install: requirements.txt  ## install project dependencies (requirements.txt)
+install: requirements-dev.txt  ## install project dependencies (requirements-dev.txt)
 	pip install -r requirements-dev.txt
 	touch install
 
