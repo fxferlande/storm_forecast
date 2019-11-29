@@ -1,4 +1,4 @@
-data/*
+
 venv
 .venv
 storm_forecast-master
@@ -9,4 +9,3 @@ init
 install
 .DS_Store
 .vscode
-output/*

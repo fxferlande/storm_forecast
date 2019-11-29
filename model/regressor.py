@@ -1,7 +1,8 @@
 import time
 from sklearn.base import BaseEstimator
-from keras.layers import Concatenate, Dropout, BatchNormalization, Activation, Dense, Input, \
-    Flatten, Conv2D, Conv1D, MaxPooling2D, LSTM, Permute, RepeatVector, Multiply, Lambda, Add
+from keras.layers import Concatenate, Dropout, BatchNormalization, \
+     Activation, Dense, Input, Flatten, Conv2D, Conv1D, MaxPooling2D, \
+     LSTM, Permute, RepeatVector, Multiply, Lambda, Add
 from keras.models import Model
 from keras.regularizers import l2
 import keras.backend as K
@@ -112,11 +113,17 @@ class Regressor(BaseEstimator):
         print(self.cnn_model.summary())
         return
 
-    def fit(self, X, y):
+    def fit(self, X, y, do_cv=False):
         t = time.time()
         _, x, _ = X
         y = y - x[:, self.len_sequences-1, 1]
-        history = self.cnn_model.fit(X, y, epochs=self.epochs, batch_size=128, verbose=1)
+        if do_cv:
+            history = self.cnn_model.fit(X, y, epochs=self.epochs,
+                                         batch_size=128, verbose=1,
+                                         validation_split=0.2)
+        else:
+            history = self.cnn_model.fit(X, y, epochs=self.epochs,
+                                         batch_size=128, verbose=1)
         print("Training done in {:.0f}s".format(time.time()-t))
         return history
 
