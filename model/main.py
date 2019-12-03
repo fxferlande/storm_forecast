@@ -47,12 +47,13 @@ def _read_data(path, dataset):
 
 
 def save_files():
-    copyfile('/home/ubuntu/documents/storm_forecast/model/main.py',
-             '/home/ubuntu/documents/storm_forecast/model/output/main.py')
-    copyfile('/home/ubuntu/documents/storm_forecast/model/regressor.py',
-             '/home/ubuntu/documents/storm_forecast/model/output/regressor.py')
-    copyfile('/home/ubuntu/documents/storm_forecast/model/feature_extractor.py',
-             '/home/ubuntu/documents/storm_forecast/model/output/feature_extractor.py')
+    dir = '/home/ubuntu/documents/storm_forecast'
+    copyfile(dir + '/model/main.py',
+             dir + '/output/main.py')
+    copyfile(dir + '/model/regressor.py',
+             dir + '/output/regressor.py')
+    copyfile(dir + '/model/feature_extractor.py',
+             dir + '/output/feature_extractor.py')
 
 
 def save_model(path, model, name='model'):
@@ -67,6 +68,7 @@ if __name__ == "__main__":
     X_test, y_test = _read_data(".", "test")
 
     epoch = 200
+    batch = 128
     len_sequences = 10
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
@@ -74,7 +76,8 @@ if __name__ == "__main__":
     X_array = feature_ext.transform(X_train)
     X_array_test = feature_ext.transform(X_test)
 
-    model = Regressor(epochs=epoch, num_scalar=X_array[1].shape[2],
+    model = Regressor(epochs=epoch, batch=batch,
+                      num_scalar=X_array[1].shape[2],
                       num_const=X_array[2].shape[1],
                       len_sequences=len_sequences)
     history = model.fit(X_array, y_train, do_cv)
