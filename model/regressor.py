@@ -10,8 +10,10 @@ from keras.layers import LeakyReLU
 
 
 class Regressor(BaseEstimator):
-    def __init__(self, num_scalar=12, num_const=7, epochs=200, len_sequences=10):
+    def __init__(self, num_scalar=12, num_const=7, epochs=200,
+                 batch=128, len_sequences=10):
         self.epochs = epochs
+        self.batch = batch
         self.len_sequences = len_sequences
         len_lstm = 4
 
@@ -119,15 +121,16 @@ class Regressor(BaseEstimator):
         y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
             history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=128, verbose=1,
+                                         batch_size=self.batch, verbose=1,
                                          validation_split=0.2)
         else:
             history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=128, verbose=1)
+                                         batch_size=self.batch, verbose=1)
         print("Training done in {:.0f}s".format(time.time()-t))
         return history
 
     def predict(self, X):
         _, x, _ = X
-        pred = self.cnn_model.predict(X).ravel() + x[:, self.len_sequences-1, 1]
+        pred = self.cnn_model.predict(X).ravel() + \
+            x[:, self.len_sequences-1, 1]
         return pred
