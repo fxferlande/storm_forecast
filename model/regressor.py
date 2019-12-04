@@ -126,7 +126,8 @@ class Regressor(BaseEstimator):
         else:
             history = self.cnn_model.fit(X, y, epochs=self.epochs,
                                          batch_size=self.batch, verbose=1)
-        print("Training done in {:.0f}s".format(time.time()-t))
+        duration = int((time.time()-t)/60)
+        print("Training done in {:.0f}s".format(duration))
         return history
 
     def predict(self, X):
