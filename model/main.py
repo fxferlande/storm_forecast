@@ -48,10 +48,8 @@ def _read_data(path, dataset):
 
 def save_files():
     dir = '/home/ubuntu/documents/storm_forecast'
-    copyfile(dir + '/model/main.py',
-             dir + '/output/main.py')
-    copyfile(dir + '/model/regressor.py',
-             dir + '/output/regressor.py')
+    copyfile(dir + '/model/main.py', dir + '/output/main.py')
+    copyfile(dir + '/model/regressor.py', dir + '/output/regressor.py')
     copyfile(dir + '/model/feature_extractor.py',
              dir + '/output/feature_extractor.py')
 
