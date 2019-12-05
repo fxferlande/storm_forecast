@@ -59,7 +59,7 @@ def save_model(path, model, name='model'):
 
 
 if __name__ == "__main__":
-    do_cv = True
+    do_cv = False
     message = " "
 
     X_train, y_train = _read_data(".", "train")
