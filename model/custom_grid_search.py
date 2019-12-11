@@ -26,13 +26,14 @@ class GridSearch(object):
         best_score = None
         history = []
         for candidate in candidates:
+            print("Starting candidate {}".format(candidate))
             self.model.set_params(**candidate)
             cv_indexes = self.get_cv_index(X_df)
             score = 0
             for i in range(self.cv):
-                train_index = cv_indexes[i:(i+self.cv-1) % self.cv]
-                train_index = [item for sublist in train_index for item in sublist]
-                val_index = cv_indexes[(self.cv+i) % self.cv]
+                train_index = cv_indexes[:i]+cv_indexes[i+1:]
+                train_index = [x for sublist in train_index for x in sublist]
+                val_index = cv_indexes[i]
                 self.model.fit(X[train_index, ], y[train_index])
                 score += self.model.score(X[val_index, ], y[val_index])
             score = score/self.cv
@@ -47,8 +48,10 @@ class GridSearch(object):
         return self.best_params, self.best_score
 
     def get_cv_index(self, X_df):
-        """ Besoin de regarder dans la dataframe originale la liste des index
-        pour pouvoir séparer par tempêtes """
+        """
+        Besoin de regarder dans la dataframe originale la liste des index
+        pour pouvoir séparer par tempêtes.
+        """
 
         ids = list(X_df["stormid"].unique())
         random.shuffle(ids)
