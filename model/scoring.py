@@ -19,14 +19,22 @@ def rmse_inf(model, X, y, threshold):
     len_sequences = np.sum(((X[1] > -10)*1)[:, :, 1], axis=1)
     indexes = len_sequences < threshold
     pred = model.predict(X)
-    return rmse(pred[indexes], y[indexes])
+    if len(y[indexes]) > 0:
+        score = rmse(pred[indexes], y[indexes])
+    else:
+        score = None
+    return score
 
 
 def rmse_sup(model, X, y, threshold):
     len_sequences = np.sum(((X[1] > -10)*1)[:, :, 1], axis=1)
     indexes = len_sequences > threshold
     pred = model.predict(X)
-    return rmse(pred[indexes], y[indexes])
+    if len(y[indexes]) > 0:
+        score = rmse(pred[indexes], y[indexes])
+    else:
+        score = None
+    return score
 
 
 def compute_scores(model, X, y):
