@@ -30,38 +30,47 @@ class Regressor(BaseEstimator):
         const_in = Input(shape=(num_const,))
 
         model_img = img_in
-        model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(32, (5, 5), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(32, (5, 5), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        model_img = Conv2D(32, (5, 5), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(32, (5, 5), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
-        model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(64, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(64, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        model_img = Conv2D(64, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(64, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
-        model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(128, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
-        model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(128, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
-        model_img = Conv2D(128, (3, 3), padding="same", kernel_regularizer=l2(l2_conv))(model_img)
+        model_img = Conv2D(128, (3, 3), padding="same",
+                           kernel_regularizer=l2(l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
@@ -153,8 +162,11 @@ class Regressor(BaseEstimator):
         break_const = break_scalar + self.num_const
         num_samples = len(X)
 
-        norm_images = np.reshape(X[:, :break_images], (num_samples, 11, 11, 7))
-        norm_scalar = np.reshape(X[:, break_images:break_scalar], (num_samples, self.len_sequences, self.num_scalar))
+        shape_image = (num_samples, 11, 11, 7)
+        shape_scalar = (num_samples, self.len_sequences, self.num_scalar)
+
+        norm_images = np.reshape(X[:, :break_images], shape_image)
+        norm_scalar = np.reshape(X[:, break_images:break_scalar], shape_scalar)
         norm_const = X[:, break_scalar: break_const]
 
         return [norm_images, norm_scalar, norm_const]
