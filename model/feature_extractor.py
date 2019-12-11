@@ -126,6 +126,7 @@ class FeatureExtractor(object):
             field_grids[-1][np.isnan(field_grids[-1])] = 0
             print("Field ", field, "just done")
         norm_image = np.stack(field_grids, axis=-1)
+        norm_image_final = np.reshape(norm_image, (len(X_df), len(self.spatial_fields)*11*11))
 
         scalar = self.compute_bearing(X_df)
         scalar = self.cross_features(scalar)
@@ -137,6 +138,7 @@ class FeatureExtractor(object):
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
         norm_scalar = np.nan_to_num(final_scalar)
+        norm_scalar_final = np.reshape(norm_scalar, (len(X_df), self.max_len*len(self.scalar_fields)))
 
         norm_constant = X_df[self.constant_fields]
         for field in self.constant_fields:
@@ -147,4 +149,7 @@ class FeatureExtractor(object):
             dummy = self.binarizer[field].transform(X_df[field])
             norm_constant = np.concatenate((norm_constant, dummy), axis=1)
         print("FeatureExtractor transform done")
-        return [norm_image, norm_scalar, norm_constant]
+        norm_constant_final = np.copy(norm_constant)
+        final = np.concatenate((norm_image_final, norm_scalar_final, norm_constant_final), axis=1)
+
+        return final

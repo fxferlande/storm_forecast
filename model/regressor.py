@@ -1,4 +1,5 @@
 import time
+import numpy as np
 from sklearn.base import BaseEstimator
 from keras.layers import Concatenate, Dropout, BatchNormalization, \
      Activation, Dense, Input, Flatten, Conv2D, Conv1D, MaxPooling2D, \
@@ -7,6 +8,7 @@ from keras.models import Model
 from keras.regularizers import l2
 import keras.backend as K
 from keras.layers import LeakyReLU
+from scoring import rmse
 
 
 class Regressor(BaseEstimator):
@@ -15,6 +17,8 @@ class Regressor(BaseEstimator):
         self.epochs = epochs
         self.batch = batch
         self.len_sequences = len_sequences
+        self.num_scalar = num_scalar
+        self.num_const = num_const
         len_lstm = 4
 
         l2_weight = 1
@@ -117,6 +121,7 @@ class Regressor(BaseEstimator):
 
     def fit(self, X, y, do_cv=False):
         t = time.time()
+        X = self.extract_subdatasets(X)
         _, x, _ = X
         y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
@@ -131,7 +136,38 @@ class Regressor(BaseEstimator):
         return history
 
     def predict(self, X):
+        X = self.extract_subdatasets(X)
         _, x, _ = X
         pred = self.cnn_model.predict(X).ravel() + \
             x[:, self.len_sequences-1, 1]
         return pred
+
+    def score(self, X, y):
+        X = self.extract_subdatasets(X)
+        pred = self.cnn_model.predict(X)
+        return rmse(pred, y)
+
+    def extract_subdatasets(self, X):
+        break_images = 11*11*7
+        break_scalar = break_images + self.len_sequences*self.num_scalar
+        break_const = break_scalar + self.num_const
+        num_samples = len(X)
+
+        norm_images = np.reshape(X[:, :break_images], (num_samples, 11, 11, 7))
+        norm_scalar = np.reshape(X[:, break_images:break_scalar], (num_samples, self.len_sequences, self.num_scalar))
+        norm_const = X[:, break_scalar: break_const]
+
+        return [norm_images, norm_scalar, norm_const]
+
+    def get_params(self, deep=True):
+
+        return {"epochs": self.epochs,
+                "batch": self.batch,
+                "len_sequences": self.len_sequences,
+                "num_scalar": self.num_scalar,
+                "num_const": self.num_const}
+
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
