@@ -41,6 +41,7 @@ def compute_scores(model, X, y):
     metrics = ["RMSE", "R2", "custom_rmse", "rmse_inf", "rmse_sup"]
     scores = pd.DataFrame(columns=["Valeur"], index=metrics)
     pred = model.predict(X)
+    X = model.extract_subdatasets(X)
     scores.loc["RMSE"] = rmse(pred, y)
     scores.loc["R2"] = r2_score(pred, y)
     scores.loc["custom_rmse"] = custom_rmse(model, X, y)
