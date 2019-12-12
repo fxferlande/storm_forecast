@@ -9,16 +9,18 @@ def rmse(x, y):
 
 def custom_rmse(model, X, y):
     pred = model.predict(X)
-    len_sequences = np.sum(((X[1] > -10)*1)[:, :, 1], axis=1)
+    X_array = model.extract_subdatasets(X)
+    len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
     len_sequences = len_sequences/max(len_sequences)
     score = np.sqrt(mean_squared_error(pred, y, sample_weight=len_sequences))
     return score
 
 
 def rmse_inf(model, X, y, threshold):
-    len_sequences = np.sum(((X[1] > -10)*1)[:, :, 1], axis=1)
-    indexes = len_sequences < threshold
     pred = model.predict(X)
+    X_array = model.extract_subdatasets(X)
+    len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
+    indexes = len_sequences < threshold
     if len(y[indexes]) > 0:
         score = rmse(pred[indexes], y[indexes])
     else:
@@ -27,9 +29,10 @@ def rmse_inf(model, X, y, threshold):
 
 
 def rmse_sup(model, X, y, threshold):
-    len_sequences = np.sum(((X[1] > -10)*1)[:, :, 1], axis=1)
-    indexes = len_sequences > threshold
     pred = model.predict(X)
+    X_array = model.extract_subdatasets(X)
+    len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
+    indexes = len_sequences > threshold
     if len(y[indexes]) > 0:
         score = rmse(pred[indexes], y[indexes])
     else:
@@ -41,7 +44,6 @@ def compute_scores(model, X, y):
     metrics = ["RMSE", "R2", "custom_rmse", "rmse_inf", "rmse_sup"]
     scores = pd.DataFrame(columns=["Valeur"], index=metrics)
     pred = model.predict(X)
-    X = model.extract_subdatasets(X)
     scores.loc["RMSE"] = rmse(pred, y)
     scores.loc["R2"] = r2_score(pred, y)
     scores.loc["custom_rmse"] = custom_rmse(model, X, y)
