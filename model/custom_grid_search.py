@@ -37,7 +37,7 @@ class GridSearch(object):
                 self.model.fit(X[train_index, ], y[train_index])
                 score += self.model.score(X[val_index, ], y[val_index])
             score = score/self.cv
-            if score > best_score or best_score is None:
+            if best_score is None or score < best_score:
                 best_score = score
                 self.best_params = candidate
                 self.best_score = score
