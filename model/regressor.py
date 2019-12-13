@@ -1,9 +1,9 @@
 import time
 import numpy as np
 from sklearn.base import BaseEstimator
-from keras.layers import Concatenate, Dropout, BatchNormalization, \
-     Activation, Dense, Input, Flatten, Conv2D, Conv1D, MaxPooling2D, \
-     LSTM, Permute, RepeatVector, Multiply, Lambda, Add
+from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
+     Flatten, Conv2D, Conv1D, MaxPooling2D, LSTM, Permute, RepeatVector, \
+     Multiply, Lambda, Add
 from keras.models import Model
 from keras.regularizers import l2
 import keras.backend as K
@@ -19,6 +19,10 @@ class Regressor(BaseEstimator):
         self.len_sequences = len_sequences
         self.num_scalar = num_scalar
         self.num_const = num_const
+
+        self.init_model()
+
+    def init_model(self):
         len_lstm = 4
 
         l2_weight = 1
@@ -26,8 +30,8 @@ class Regressor(BaseEstimator):
         l2_conv = 10
 
         img_in = Input(shape=(11, 11, 7))
-        scalar_in = Input(shape=(len_sequences, num_scalar))
-        const_in = Input(shape=(num_const,))
+        scalar_in = Input(shape=(self.len_sequences, self.num_scalar))
+        const_in = Input(shape=(self.num_const,))
 
         model_img = img_in
         model_img = Conv2D(32, (5, 5), padding="same",
@@ -82,7 +86,8 @@ class Regressor(BaseEstimator):
         model_img = Activation("tanh")(model_img)
 
         model_scalar = scalar_in
-        activations = LSTM(len_lstm, activation='tanh', kernel_regularizer=l2(l2_lstm),
+        activations = LSTM(len_lstm, activation='tanh',
+                           kernel_regularizer=l2(l2_lstm),
                            return_sequences=True)(model_scalar)
         attention = Dense(1, activation='tanh')(activations)
         attention = Flatten()(attention)
@@ -92,7 +97,8 @@ class Regressor(BaseEstimator):
 
         sent_representation = Multiply()([activations, attention])
         sent_representation = Lambda(lambda xin: K.sum(xin, axis=-2),
-                                     output_shape=(len_lstm,))(sent_representation)
+                                     output_shape=(len_lstm,))(
+                                     sent_representation)
         model_scalar = Dense(128)(sent_representation)
         model_scalar = Dense(64)(sent_representation)
         model_scalar = Activation("tanh")(model_scalar)
@@ -100,7 +106,8 @@ class Regressor(BaseEstimator):
         model_scalar_2 = Conv1D(64, 3, padding="same")(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
-        model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(model_scalar_2)
+        model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(
+            model_scalar_2)
         model_scalar_2 = Dropout(0.3)(model_scalar_2)
         model_scalar_2 = Activation("tanh")(model_scalar_2)
 
@@ -108,16 +115,11 @@ class Regressor(BaseEstimator):
         model_const = Dense(64, kernel_regularizer=l2(l2_weight))(model_const)
         model_const = Activation("tanh")(model_const)
 
-        model = Concatenate()([model_img, model_scalar, model_scalar_2, model_const])
-        model = BatchNormalization()(model)
+        model = Concatenate()([model_img, model_scalar, model_scalar_2,
+                               model_const])
 
         model = Dense(64, kernel_regularizer=l2(l2_weight))(model)
-        model = Activation("tanh")(model)
-        model = Dense(32, kernel_regularizer=l2(l2_weight))(model)
         model = Dropout(0.3)(model)
-        model = Activation("tanh")(model)
-
-        model = Dense(16, kernel_regularizer=l2(l2_weight))(model)
         model = Activation("tanh")(model)
 
         model = Dense(1)(model)
@@ -182,4 +184,5 @@ class Regressor(BaseEstimator):
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
+        self.init_model()
         return self
