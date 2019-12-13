@@ -130,18 +130,20 @@ class Regressor(BaseEstimator):
         print(self.cnn_model.summary())
         return
 
-    def fit(self, X, y, do_cv=False):
+    def fit(self, X, y, do_cv=False, verbose=1):
         t = time.time()
         X = self.extract_subdatasets(X)
         _, x, _ = X
         y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
             history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=self.batch, verbose=1,
+                                         batch_size=self.batch,
+                                         verbose=verbose,
                                          validation_split=0.2)
         else:
             history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=self.batch, verbose=1)
+                                         batch_size=self.batch,
+                                         verbose=verbose)
         duration = int((time.time()-t)/60)
         print("Training done in {:.0f} mins".format(duration))
         return history
