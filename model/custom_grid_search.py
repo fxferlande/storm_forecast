@@ -25,6 +25,8 @@ class GridSearch(object):
         candidates = self.set_candidates()
         best_score = None
         history = []
+        done = 0
+        to_do = len(candidates)*self.cv
         for candidate in candidates:
             print("Starting candidate {}".format(candidate))
             self.model.set_params(**candidate)
@@ -34,7 +36,9 @@ class GridSearch(object):
                 train_index = cv_indexes[:i]+cv_indexes[i+1:]
                 train_index = [x for sublist in train_index for x in sublist]
                 val_index = cv_indexes[i]
-                self.model.fit(X[train_index, ], y[train_index])
+                self.model.fit(X[train_index, ], y[train_index], verbose=0)
+                done += 1
+                print("Model {} out of {} done".format(done, to_do))
                 score += self.model.score(X[val_index, ], y[val_index])
             score = score/self.cv
             if best_score is None or score < best_score:
