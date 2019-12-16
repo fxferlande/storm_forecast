@@ -13,17 +13,17 @@ from scoring import rmse
 
 class Regressor(BaseEstimator):
     def __init__(self, num_scalar=12, num_const=7, epochs=200,
-                 batch=128, len_sequences=10):
+                 batch=128, len_sequences=5, len_lstm=4):
         self.epochs = epochs
         self.batch = batch
         self.len_sequences = len_sequences
+        self.len_lstm = len_lstm
         self.num_scalar = num_scalar
         self.num_const = num_const
 
         self.init_model()
 
     def init_model(self):
-        len_lstm = 4
 
         l2_weight = 1
         l2_lstm = 10
@@ -86,18 +86,18 @@ class Regressor(BaseEstimator):
         model_img = Activation("tanh")(model_img)
 
         model_scalar = scalar_in
-        activations = LSTM(len_lstm, activation='tanh',
+        activations = LSTM(self.len_lstm, activation='tanh',
                            kernel_regularizer=l2(l2_lstm),
                            return_sequences=True)(model_scalar)
         attention = Dense(1, activation='tanh')(activations)
         attention = Flatten()(attention)
         attention = Activation('softmax')(attention)
-        attention = RepeatVector(len_lstm)(attention)
+        attention = RepeatVector(self.len_lstm)(attention)
         attention = Permute([2, 1])(attention)
 
         sent_representation = Multiply()([activations, attention])
         sent_representation = Lambda(lambda xin: K.sum(xin, axis=-2),
-                                     output_shape=(len_lstm,))(
+                                     output_shape=(self.len_lstm,))(
                                      sent_representation)
         model_scalar = Dense(128)(sent_representation)
         model_scalar = Dense(64)(sent_representation)
