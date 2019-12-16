@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     epoch = 1000
     batch = 516
-    len_sequences = 10
+    len_sequences = 5
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
     feature_ext.fit(X_train, y_train)

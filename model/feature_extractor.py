@@ -117,7 +117,7 @@ class FeatureExtractor(object):
             self.binarizer[field].fit(X_df[field])
         print("Fitting FeatureExtractor done")
 
-    def transform(self, X_df):
+    def compute_image(self, X_df):
         print("Starting FeatureExtractor transform")
         field_grids = []
         for field in self.spatial_fields:
@@ -130,8 +130,13 @@ class FeatureExtractor(object):
             print("Field ", field, "just done")
         norm_image = np.stack(field_grids, axis=-1)
         image_shape = (len(X_df), len(self.spatial_fields)*11*11)
-        norm_image_final = np.reshape(norm_image, image_shape)
+        result = np.reshape(norm_image, image_shape)
+        return result
 
+    def compute_tda(self, X_df):
+        return None
+
+    def compute_scalar(self, X_df):
         scalar = self.compute_bearing(X_df)
         scalar = self.cross_features(scalar)
         scalar = scalar[self.scalar_fields]
@@ -144,8 +149,10 @@ class FeatureExtractor(object):
             print("Field ", field, "just done")
         norm_scalar = np.nan_to_num(final_scalar)
         scalar_shape = self.max_len*len(self.scalar_fields)
-        norm_scalar_final = np.reshape(norm_scalar, (len(X_df), scalar_shape))
+        result = np.reshape(norm_scalar, (len(X_df), scalar_shape))
+        return result
 
+    def compute_constant(self, X_df):
         norm_constant = X_df[self.constant_fields]
         for field in self.constant_fields:
             norm_constant[field] = (norm_constant[field] -
@@ -156,7 +163,13 @@ class FeatureExtractor(object):
             dummy = self.binarizer[field].transform(X_df[field])
             norm_constant = np.concatenate((norm_constant, dummy), axis=1)
         print("FeatureExtractor transform done")
-        norm_constant_final = np.copy(norm_constant)
+        result = np.copy(norm_constant)
+        return result
+
+    def transform(self, X_df):
+        norm_image_final = self.compute_image(X_df)
+        norm_scalar_final = self.compute_scalar(X_df)
+        norm_constant_final = self.compute_constant(X_df)
 
         final = np.concatenate((norm_image_final,
                                 norm_scalar_final,
