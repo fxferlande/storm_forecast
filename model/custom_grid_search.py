@@ -41,6 +41,7 @@ class GridSearch(object):
                 print("Model {} out of {} done".format(done, to_do))
                 score += self.model.score(X[val_index, ], y[val_index])
             score = score/self.cv
+            print("Candidate {} done: {}".format(candidate, score))
             if best_score is None or score < best_score:
                 best_score = score
                 self.best_params = candidate
