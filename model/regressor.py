@@ -23,7 +23,7 @@ class Regressor(BaseEstimator):
 
         self.init_model()
 
-    def init_model(self):
+    def init_model(self, verbose=1):
 
         l2_weight = 1
         l2_lstm = 10
@@ -127,7 +127,8 @@ class Regressor(BaseEstimator):
         self.cnn_model = Model([img_in, scalar_in, const_in], model)
         self.cnn_model.compile(loss="mse", optimizer="adam")
 
-        print(self.cnn_model.summary())
+        if verbose == 1:
+            print(self.cnn_model.summary())
         return
 
     def fit(self, X, y, do_cv=False, verbose=1):
@@ -186,5 +187,5 @@ class Regressor(BaseEstimator):
     def set_params(self, **parameters):
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
-        self.init_model()
+        self.init_model(verbose=0)
         return self
