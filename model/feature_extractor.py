@@ -18,34 +18,49 @@ class FeatureExtractor(object):
                                            columns=["mean", "std"],
                                            dtype=float)
         self.binarizer = {}
-        self.max_len = len_sequences
+        self.len_sequences = len_sequences
 
-    def make_sequence(self, X_df, field, normalize=True, padding_value=-100):
+    def make_sequence(self, X_df: pd.DataFrame, field: str,
+                      padding_value: int = -100) -> np.ndarray:
+        """
+        Selects the field out of the dataframe X_df, and computes sequences of
+        length self.len_sequences for each storm. The padding value is used for
+        the beginning of the sequence.
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+            field           (str):   name of the field to select
+            padding_value   (int):   value to fill at the begining of sequences
+
+        Returns:
+            np.ndarray:  Array of size (len(X_df), self.len_sequences)
+        """
         ids = X_df.stormid.unique()
         f_data = X_df[[field, "stormid"]]
         f_data[field] = (f_data[field] -
                          self.scaling_values.loc[field, "mean"]) / \
             self.scaling_values.loc[field, "std"]
-        bloc = np.empty((len(X_df), self.max_len))
+        bloc = np.empty((len(X_df), self.len_sequences))
         for id in ids:
             ligne = f_data[f_data["stormid"] == id][field]
-            seq_line = np.empty((len(ligne), self.max_len))
-            for i in range(self.max_len):
-                seq_line[:, self.max_len - 1 - i] = \
+            seq_line = np.empty((len(ligne), self.len_sequences))
+            for i in range(self.len_sequences):
+                seq_line[:, self.len_sequences - 1 - i] = \
                     np.array(([padding_value] * i + list(ligne))[0:len(ligne)])
             pos = list(X_df["stormid"]).index(id)
             bloc[pos:pos + len(ligne), :] = seq_line
         return bloc
 
-    def bearing(self, line):
+    def bearing(self, line: pd.Series) -> float:
         """
         Compute bearing in degrees for one line of dataframe
 
         Args:
-            lon1, lat1, lon2, lat2: list-like coordinates in degrees
+            line   (pd.Series):  Row of dataframe with longitude, latitude,
+                                 longitude_before and latitude_before fields
 
         Returns:
-            bearing: list-like bearing in degrees in [-180, 180]
+            float: bearing in degrees
         """
         if line.instant_t == 0:
             lon1, lat1 = line["longitude"], line["latitude"]
@@ -64,7 +79,16 @@ class FeatureExtractor(object):
 
         return bearing
 
-    def compute_bearing(self, X_df):
+    def compute_bearing(self, X_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Compute bearing in degrees for all the lines of a dataframe
+
+        Args:
+            X_df    (pd.DataFrame): source DataFrame
+
+        Returns:
+            pd.DataFrame:   transformed dataframe
+        """
         X_df["longitude_before"] = X_df["longitude"].shift()
         X_df["latitude_before"] = X_df["latitude"].shift()
         X_df["bearing"] = X_df.apply(self.bearing, axis=1)
@@ -77,9 +101,18 @@ class FeatureExtractor(object):
             self.scalar_fields += ["bearing_cos", "bearing_sin"]
         return X_df
 
-    def cross_features(self, X_df):
+    def cross_features(self, X_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Compute features based on other features (differences, multiplications)
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+
+        Returns:
+            pd.DataFrame:   transformed dataframe
+        """
         X_df["mw12_imw"] = - X_df["max_wind_change_12h"] * \
-                            X_df["initial_max_wind"]
+            X_df["initial_max_wind"]
         if "mw12_imw" not in self.scalar_fields:
             self.scalar_fields.append("mw12_imw")
         X_df["diff_current_max"] = X_df["windspeed"] - \
@@ -92,7 +125,18 @@ class FeatureExtractor(object):
             self.scalar_fields.append("diff_current_init")
         return X_df
 
-    def fit(self, X_df, y):
+    def fit(self, X_df: pd.DataFrame, y: np.ndarray = None) -> None:
+        """
+        Calculates mean and std values for each field. Image fields are
+        regrouped before calculation.
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+            y        (np.ndarray):   source target
+
+        Returns:
+            None
+        """
         print("Starting FeatureExtractor fit")
         self.scaling_values.loc["windspeed", "mean"] = X_df["windspeed"].mean()
         self.scaling_values.loc["windspeed", "std"] = X_df["windspeed"].std()
@@ -117,8 +161,17 @@ class FeatureExtractor(object):
             self.binarizer[field].fit(X_df[field])
         print("Fitting FeatureExtractor done")
 
-    def compute_image(self, X_df):
-        print("Starting FeatureExtractor transform")
+    def compute_image(self, X_df: pd.DataFrame) -> np.ndarray:
+        """
+        Processes image features and flattens them.
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+
+        Returns:
+            np.ndarray:   Array of size
+                          (len(X_df), len(self.spatial_fields)*11*11)
+        """
         field_grids = []
         for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
@@ -133,26 +186,43 @@ class FeatureExtractor(object):
         result = np.reshape(norm_image, image_shape)
         return result
 
-    def compute_tda(self, X_df):
-        return None
+    def compute_scalar(self, X_df: pd.DataFrame) -> np.ndarray:
+        """
+        Processes scalar features, by making sequences and flattens them.
 
-    def compute_scalar(self, X_df):
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+
+        Returns:
+            np.ndarray:   Array of size
+                        (len(X_df), self.len_sequences*len(self.scalar_fields))
+        """
         scalar = self.compute_bearing(X_df)
         scalar = self.cross_features(scalar)
         scalar = scalar[self.scalar_fields]
         scalar["stormid"] = X_df["stormid"]
-        final_scalar = np.empty((len(scalar), self.max_len,
+        final_scalar = np.empty((len(scalar), self.len_sequences,
                                  len(self.scalar_fields)))
         for field in self.scalar_fields:
             bloc = self.make_sequence(scalar, field)
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
             print("Field ", field, "just done")
         norm_scalar = np.nan_to_num(final_scalar)
-        scalar_shape = self.max_len*len(self.scalar_fields)
+        scalar_shape = self.len_sequences*len(self.scalar_fields)
         result = np.reshape(norm_scalar, (len(X_df), scalar_shape))
         return result
 
-    def compute_constant(self, X_df):
+    def compute_constant(self, X_df: pd.DataFrame) -> np.ndarray:
+        """
+        Processes constant featuresreshapes them. It also binarizes dummy
+        fields.
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+
+        Returns:
+            np.ndarray:   Array of constant features
+        """
         norm_constant = X_df[self.constant_fields]
         for field in self.constant_fields:
             norm_constant[field] = (norm_constant[field] -
@@ -162,11 +232,23 @@ class FeatureExtractor(object):
         for field in self.dummy_field:
             dummy = self.binarizer[field].transform(X_df[field])
             norm_constant = np.concatenate((norm_constant, dummy), axis=1)
-        print("FeatureExtractor transform done")
         result = np.copy(norm_constant)
         return result
 
-    def transform(self, X_df):
+    def transform(self, X_df: pd.DataFrame) -> np.ndarray:
+        """
+        Processes all types of features and returns a flattened array. It is
+        a more standard format if we want to use libraries such as sklearn, but
+        the regressor will have to separate the different types of features in
+        the fit and predict
+
+        Args:
+            X_df   (pd.DataFrame):   source DataFrame
+
+        Returns:
+            np.ndarray:   Array of constant features
+        """
+        print("Starting FeatureExtractor transform")
         norm_image_final = self.compute_image(X_df)
         norm_scalar_final = self.compute_scalar(X_df)
         norm_constant_final = self.compute_constant(X_df)
@@ -174,4 +256,5 @@ class FeatureExtractor(object):
         final = np.concatenate((norm_image_final,
                                 norm_scalar_final,
                                 norm_constant_final), axis=1)
+        print("FeatureExtractor transform done")
         return final
