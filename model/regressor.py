@@ -124,11 +124,11 @@ class Regressor(BaseEstimator):
 
         model = Dense(1)(model)
 
-        self.cnn_model = Model([img_in, scalar_in, const_in], model)
-        self.cnn_model.compile(loss="mse", optimizer="adam")
+        self.model = Model([img_in, scalar_in, const_in], model)
+        self.model.compile(loss="mse", optimizer="adam")
 
         if verbose == 1:
-            print(self.cnn_model.summary())
+            print(self.model.summary())
         return
 
     def fit(self, X, y, do_cv=False, verbose=1):
@@ -137,14 +137,14 @@ class Regressor(BaseEstimator):
         _, x, _ = X
         y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
-            history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=self.batch,
-                                         verbose=verbose,
-                                         validation_split=0.2)
+            history = self.model.fit(X, y, epochs=self.epochs,
+                                     batch_size=self.batch,
+                                     verbose=verbose,
+                                     validation_split=0.2)
         else:
-            history = self.cnn_model.fit(X, y, epochs=self.epochs,
-                                         batch_size=self.batch,
-                                         verbose=verbose)
+            history = self.model.fit(X, y, epochs=self.epochs,
+                                     batch_size=self.batch,
+                                     verbose=verbose)
         duration = int((time.time()-t)/60)
         print("Training done in {:.0f} mins".format(duration))
         return history
@@ -152,13 +152,13 @@ class Regressor(BaseEstimator):
     def predict(self, X):
         X = self.extract_subdatasets(X)
         _, x, _ = X
-        pred = self.cnn_model.predict(X).ravel() + \
+        pred = self.model.predict(X).ravel() + \
             x[:, self.len_sequences-1, 1]
         return pred
 
     def score(self, X, y):
         X = self.extract_subdatasets(X)
-        pred = self.cnn_model.predict(X)
+        pred = self.model.predict(X)
         return rmse(pred, y)
 
     def extract_subdatasets(self, X):
