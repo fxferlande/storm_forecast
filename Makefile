@@ -9,7 +9,7 @@ pipeline: install   ## run main project pipeline
 
 # PROJECT SETUP COMMANDS
 install: requirements-dev.txt  ## install project dependencies (requirements-dev.txt)
-	pip install -r requirements-dev.txt
+	bash install.sh
 	touch install
 
 init: ## initiate virtual environment
