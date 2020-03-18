@@ -1,14 +1,15 @@
 import logging
 import time
 import numpy as np
+import pandas as pd
+import keras.backend as K
 from sklearn.base import BaseEstimator
 from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
      Flatten, Conv2D, Conv1D, MaxPooling2D, LSTM, Permute, RepeatVector, \
-     Multiply, Lambda, Add
+     Multiply, Lambda, Add, LeakyReLU
 from keras.models import Model
 from keras.regularizers import l2
-import keras.backend as K
-from keras.layers import LeakyReLU
+from keras.callbacks.callbacks import History
 from scoring import rmse
 
 
@@ -24,8 +25,23 @@ class Regressor(BaseEstimator):
 
         self.init_model()
 
-    def init_model(self, verbose=1):
+    def init_model(self, verbose: int = 1) -> None:
+        """
+        Creates the keras model for training. It is based on 4 blocks
+        corresponding to 4 sub-models:
+        - one processing the images
+        - one processing the scalar sequences through LSTM
+        - one processing the scalar sequences through CNN
+        - one processing the constant features
+        They are all concatenated at the end.
 
+        Args:
+            verbose   (int):   Option to show the parameters of the model once
+                               compiled
+
+        Returns:
+            None
+        """
         l2_weight = 1
         l2_lstm = 10
         l2_conv = 10
@@ -132,7 +148,22 @@ class Regressor(BaseEstimator):
             print(self.model.summary())
         return
 
-    def fit(self, X, y, do_cv=False, verbose=1):
+    def fit(self, X: pd.DataFrame, y: np.ndarray, do_cv: bool = False,
+            verbose: int = 1) -> History:
+        """
+        Fits the model on X and y after extracting different subdatasets
+        (image, scalar, and constant) from X.
+
+        Args:
+            X  (pd.DataFrame):   source DataFrame, containing all the type of
+                                 inputs, concatenated in one dataframe.
+            y    (np.ndarray):   target
+            do_cv      (bool):   option for keras integrated cross-validation
+            verbose     (int):   verbose parameter for keras fit function
+
+        Returns:
+            History:  Keras history of training (useful for plotting curves)
+        """
         t = time.time()
         X = self.extract_subdatasets(X)
         _, x, _ = X
@@ -150,19 +181,54 @@ class Regressor(BaseEstimator):
         logging.info("Training done in {:.0f} mins".format(duration))
         return history
 
-    def predict(self, X):
+    def predict(self, X: pd.DataFrame) -> np.ndarray:
+        """
+        Predicts output for X after extracting different subdatasets
+        (image, scalar, and constant).
+
+        Args:
+            X  (pd.DataFrame):   source DataFrame, containing all the type of
+                                 inputs, concatenated in one dataframe.
+
+        Returns:
+            np.ndarray:  Predicted values for windspeed
+        """
         X = self.extract_subdatasets(X)
         _, x, _ = X
         pred = self.model.predict(X).ravel() + \
             x[:, self.len_sequences-1, 1]
         return pred
 
-    def score(self, X, y):
+    def score(self, X: pd.DataFrame, y: np.ndarray) -> float:
+        """
+        Computes rmse between target y and predictions for input X after
+        extracting different subdatasets (image, scalar, and constant).
+
+        Args:
+            X  (pd.DataFrame):   source DataFrame, containing all the type of
+                                 inputs, concatenated in one dataframe.
+            y    (np.ndarray):   target
+
+        Returns:
+            float:  rmse of predictions
+        """
         X = self.extract_subdatasets(X)
         pred = self.model.predict(X)
         return rmse(pred, y)
 
-    def extract_subdatasets(self, X):
+    def extract_subdatasets(self, X: pd.DataFrame) -> list:
+        """
+        Extracts different subdatasets from X (image, scalar, and constant).
+        Based on the expected shapes, it splits X in three subdatasets and
+        reshapes them. Il allows us to give a DataFrame as input for the model.
+
+        Args:
+            X  (pd.DataFrame):   source DataFrame, containing all the type of
+                                 inputs, concatenated in one dataframe.
+
+        Returns:
+            list:  List of the 3 subdatasets
+        """
         break_images = 11*11*7
         break_scalar = break_images + self.len_sequences*self.num_scalar
         break_const = break_scalar + self.num_const
@@ -177,15 +243,29 @@ class Regressor(BaseEstimator):
 
         return [norm_images, norm_scalar, norm_const]
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> dict:
+        """
+        Returns the parameters of the model.
 
+        Args:
+            deep  (bool):  True
+
+        Returns:
+            dict:   Parameters of the model
+        """
         return {"epochs": self.epochs,
                 "batch": self.batch,
                 "len_sequences": self.len_sequences,
                 "num_scalar": self.num_scalar,
                 "num_const": self.num_const}
 
-    def set_params(self, **parameters):
+    def set_params(self, **parameters) -> None:
+        """
+        Sets the parameters of the model.
+
+        Returns:
+            None
+        """
         for parameter, value in parameters.items():
             setattr(self, parameter, value)
         self.init_model(verbose=0)
