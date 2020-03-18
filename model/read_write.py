@@ -6,6 +6,17 @@ from settings.dev import DATA_DIR, OUTPUT_DIR
 
 
 def read_data(dataset: str, horizon: int = 24) -> (pd.DataFrame, np.ndarray):
+    """
+    Reads data from the DATA_DIR and separates into target and features. Target
+    is computed by selecting windspeed feature and selecting value of the
+    same storm at a certain horizon ahead.
+    Args:
+        dataset   (str):   Name of the dataset in DATA_DIR
+        horizon   (int):   Horizon for target (in hours)
+
+    Returns:
+        (pd.DataFrame, np.ndarray) :   Tuple of features and target
+    """
     try:
         Data = pd.read_csv(DATA_DIR + dataset)
     except IOError:
@@ -31,5 +42,13 @@ def read_data(dataset: str, horizon: int = 24) -> (pd.DataFrame, np.ndarray):
     return X, y
 
 
-def save_model(model, name='model'):
+def save_model(model, name: str = 'model') -> None:
+    """
+    Saves the keras model in .h5 format in OUTPUT_DIR.
+    Args:
+        name   (str):   Name of the output file
+
+    Returns:
+        None
+    """
     model.save(OUTPUT_DIR + '/{}.h5'.format(name))
