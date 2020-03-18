@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import LabelBinarizer
@@ -5,7 +6,7 @@ pd.set_option('mode.chained_assignment', None)
 
 
 class FeatureExtractor(object):
-    def __init__(self, len_sequences=10):
+    def __init__(self, len_sequences: int = 10):
         self.dummy_field = ["nature"]
         self.constant_fields = ['initial_max_wind', 'basin']
         self.scalar_fields = ['instant_t', 'windspeed', 'latitude',
@@ -180,10 +181,10 @@ class FeatureExtractor(object):
                                 self.scaling_values.loc[field, "mean"]) /
                                self.scaling_values.loc[field, "std"])
             field_grids[-1][np.isnan(field_grids[-1])] = 0
-            print("Field ", field, "just done")
         norm_image = np.stack(field_grids, axis=-1)
         image_shape = (len(X_df), len(self.spatial_fields)*11*11)
         result = np.reshape(norm_image, image_shape)
+        logging.info("FeatureExtractor: image transform done")
         return result
 
     def compute_scalar(self, X_df: pd.DataFrame) -> np.ndarray:
@@ -206,10 +207,10 @@ class FeatureExtractor(object):
         for field in self.scalar_fields:
             bloc = self.make_sequence(scalar, field)
             final_scalar[:, :, self.scalar_fields.index(field)] = bloc
-            print("Field ", field, "just done")
         norm_scalar = np.nan_to_num(final_scalar)
         scalar_shape = self.len_sequences*len(self.scalar_fields)
         result = np.reshape(norm_scalar, (len(X_df), scalar_shape))
+        logging.info("FeatureExtractor: scalar transform done")
         return result
 
     def compute_constant(self, X_df: pd.DataFrame) -> np.ndarray:
@@ -233,6 +234,7 @@ class FeatureExtractor(object):
             dummy = self.binarizer[field].transform(X_df[field])
             norm_constant = np.concatenate((norm_constant, dummy), axis=1)
         result = np.copy(norm_constant)
+        logging.info("FeatureExtractor: constant transform done")
         return result
 
     def transform(self, X_df: pd.DataFrame) -> np.ndarray:
@@ -248,7 +250,7 @@ class FeatureExtractor(object):
         Returns:
             np.ndarray:   Array of constant features
         """
-        print("Starting FeatureExtractor transform")
+        logging.info("Starting FeatureExtractor transform")
         norm_image_final = self.compute_image(X_df)
         norm_scalar_final = self.compute_scalar(X_df)
         norm_constant_final = self.compute_constant(X_df)
@@ -256,5 +258,5 @@ class FeatureExtractor(object):
         final = np.concatenate((norm_image_final,
                                 norm_scalar_final,
                                 norm_constant_final), axis=1)
-        print("FeatureExtractor transform done")
+        logging.info("FeatureExtractor transform done")
         return final

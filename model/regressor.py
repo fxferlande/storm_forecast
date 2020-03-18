@@ -1,3 +1,4 @@
+import logging
 import time
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -146,7 +147,7 @@ class Regressor(BaseEstimator):
                                      batch_size=self.batch,
                                      verbose=verbose)
         duration = int((time.time()-t)/60)
-        print("Training done in {:.0f} mins".format(duration))
+        logging.info("Training done in {:.0f} mins".format(duration))
         return history
 
     def predict(self, X):
