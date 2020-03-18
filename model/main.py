@@ -2,11 +2,12 @@ import os
 import numpy as np
 from numpy.random import seed
 
-from read_write import read_data, save_files, save_model
+from read_write import read_data, save_model
 from feature_extractor import FeatureExtractor
 from regressor import Regressor
 from scoring import save_scores
 from plots import plot_model, plot_history
+from settings.dev import TRAIN_FILE, TEST_FILE
 
 seed(42)
 np.random.seed(42)
@@ -18,8 +19,8 @@ if __name__ == "__main__":
     do_cv = False
     message = " "
 
-    X_train, y_train = read_data(".", "train")
-    X_test, y_test = read_data(".", "test")
+    X_train, y_train = read_data(TRAIN_FILE)
+    X_test, y_test = read_data(TEST_FILE)
 
     epoch = 1000
     batch = 516
@@ -38,7 +39,7 @@ if __name__ == "__main__":
     history = model.fit(X_array, y_train, do_cv)
 
     plot_model(output_path, model.cnn_model)
-    save_files()
+
     save_model(output_path, model.cnn_model)
     plot_history(output_path, history, do_cv)
     save_scores(output_path, model, X_array, y_train, X_array_test, y_test,
