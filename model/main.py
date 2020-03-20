@@ -16,9 +16,9 @@ os.environ['PYTHONHASHSEED'] = str(0)
 
 
 if __name__ == "__main__":
-    do_cv = True
+    do_cv = False
     message = " "
-    epoch = 1
+    epoch = 500
     batch = 516
     len_sequences = 10
 

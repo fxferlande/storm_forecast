@@ -2,7 +2,12 @@
 
 # PRODUCTION COMMANDS
 main: ## run main project pipeline
-	python model/main.py
+ifdef backend
+	export KERAS_BACKEND='$(backend)'; python model/main.py
+else
+	@echo 'No backend variable passed, using Theano'
+	export KERAS_BACKEND='theano'; python model/main.py
+endif
 
 pipeline: install   ## run main project pipeline
 	main
