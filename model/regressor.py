@@ -1,6 +1,7 @@
 import logging
 import time
 import numpy as np
+import pandas as pd
 import keras.backend as K
 from sklearn.base import BaseEstimator
 from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
@@ -9,7 +10,7 @@ from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
 from keras.models import Model
 from keras.regularizers import l2
 from keras.callbacks.callbacks import History
-from model.scoring import rmse
+from model.scoring import rmse, weighted_rmse
 
 
 class Regressor(BaseEstimator):
@@ -198,23 +199,6 @@ class Regressor(BaseEstimator):
             x[:, self.len_sequences-1, 1]
         return pred
 
-    def score(self, X: np.ndarray, y: np.ndarray) -> float:
-        """
-        Computes rmse between target y and predictions for input X after
-        extracting different subdatasets (image, scalar, and constant).
-
-        Args:
-            X  (np.ndarray):     Source array, containing all the type of
-                                 inputs, concatenated in one dataframe.
-            y    (np.ndarray):   Target
-
-        Returns:
-            float:  rmse of predictions
-        """
-        X = self.extract_subdatasets(X)
-        pred = self.model.predict(X)
-        return rmse(pred, y)
-
     def extract_subdatasets(self, X: np.ndarray) -> list:
         """
         Extracts different subdatasets from X (image, scalar, and constant).
@@ -241,6 +225,43 @@ class Regressor(BaseEstimator):
         norm_const = X[:, break_scalar: break_const]
 
         return [norm_images, norm_scalar, norm_const]
+
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
+        """
+        Computes rmse between target y and predictions for input X after
+        extracting different subdatasets (image, scalar, and constant).
+
+        Args:
+            X  (np.ndarray):     Source array, containing all the type of
+                                 inputs, concatenated in one dataframe.
+            y    (np.ndarray):   Target
+
+        Returns:
+            float:  rmse of predictions
+        """
+        X = self.extract_subdatasets(X)
+        pred = self.model.predict(X)
+        return rmse(pred, y)
+
+    def compute_scores(self, X: np.ndarray, y: np.ndarray,
+                       name: str = "") -> pd.Series:
+        scores = pd.Series()
+        pred = self.predict(X)
+        X_array = self.extract_subdatasets(X)
+        len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
+
+        scores.loc["RMSE{}".format(name)] = rmse(pred, y)
+
+        weight = len_sequences/max(len_sequences)
+        scores.loc["cust_rmse{}".format(name)] = weighted_rmse(pred, y, weight)
+
+        idx_inf = len_sequences < 5
+        scores.loc["rmse_inf{}".format(name)] = rmse(pred[idx_inf], [idx_inf])
+
+        idx_sup = len_sequences >= 5
+        scores.loc["rmse_sup{}".format(name)] = rmse(pred[idx_sup], [idx_sup])
+
+        return scores
 
     def get_params(self, deep: bool = True) -> dict:
         """
