@@ -154,11 +154,11 @@ class Regressor(BaseEstimator):
         (image, scalar, and constant) from X.
 
         Args:
-            X   (np.ndarray):    source array, containing all the type of
+            X   (np.ndarray):    Source array, containing all the type of
                                  inputs, concatenated in one dataframe.
-            y    (np.ndarray):   target
-            do_cv      (bool):   option for keras integrated cross-validation
-            verbose     (int):   verbose parameter for keras fit function
+            y    (np.ndarray):   Target
+            do_cv      (bool):   Option for keras integrated cross-validation
+            verbose     (int):   Verbose parameter for keras fit function
 
         Returns:
             History:  Keras history of training (useful for plotting curves)
@@ -186,8 +186,8 @@ class Regressor(BaseEstimator):
         (image, scalar, and constant).
 
         Args:
-            X  (np.ndarray):    source array, containing all the type of
-                                inputs, concatenated in one dataframe.
+            X  (np.ndarray):    Source array, containing all the type of
+                                Inputs, concatenated in one dataframe.
 
         Returns:
             np.ndarray:  Predicted values for windspeed
@@ -204,9 +204,9 @@ class Regressor(BaseEstimator):
         extracting different subdatasets (image, scalar, and constant).
 
         Args:
-            X  (np.ndarray):    source array, containing all the type of
-                                inputs, concatenated in one dataframe.
-            y    (np.ndarray):   target
+            X  (np.ndarray):     Source array, containing all the type of
+                                 inputs, concatenated in one dataframe.
+            y    (np.ndarray):   Target
 
         Returns:
             float:  rmse of predictions
