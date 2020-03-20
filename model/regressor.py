@@ -1,7 +1,6 @@
 import logging
 import time
 import numpy as np
-import pandas as pd
 import keras.backend as K
 from sklearn.base import BaseEstimator
 from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
@@ -10,7 +9,7 @@ from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
 from keras.models import Model
 from keras.regularizers import l2
 from keras.callbacks.callbacks import History
-from scoring import rmse
+from model.scoring import rmse
 
 
 class Regressor(BaseEstimator):
@@ -148,14 +147,14 @@ class Regressor(BaseEstimator):
             print(self.model.summary())
         return
 
-    def fit(self, X: pd.DataFrame, y: np.ndarray, do_cv: bool = False,
+    def fit(self, X: np.ndarray, y: np.ndarray, do_cv: bool = False,
             verbose: int = 1) -> History:
         """
         Fits the model on X and y after extracting different subdatasets
         (image, scalar, and constant) from X.
 
         Args:
-            X  (pd.DataFrame):   source DataFrame, containing all the type of
+            X   (np.ndarray):    source array, containing all the type of
                                  inputs, concatenated in one dataframe.
             y    (np.ndarray):   target
             do_cv      (bool):   option for keras integrated cross-validation
@@ -181,14 +180,14 @@ class Regressor(BaseEstimator):
         logging.info("Training done in {:.0f} mins".format(duration))
         return history
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predicts output for X after extracting different subdatasets
         (image, scalar, and constant).
 
         Args:
-            X  (pd.DataFrame):   source DataFrame, containing all the type of
-                                 inputs, concatenated in one dataframe.
+            X  (np.ndarray):    source array, containing all the type of
+                                inputs, concatenated in one dataframe.
 
         Returns:
             np.ndarray:  Predicted values for windspeed
@@ -199,14 +198,14 @@ class Regressor(BaseEstimator):
             x[:, self.len_sequences-1, 1]
         return pred
 
-    def score(self, X: pd.DataFrame, y: np.ndarray) -> float:
+    def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """
         Computes rmse between target y and predictions for input X after
         extracting different subdatasets (image, scalar, and constant).
 
         Args:
-            X  (pd.DataFrame):   source DataFrame, containing all the type of
-                                 inputs, concatenated in one dataframe.
+            X  (np.ndarray):    source array, containing all the type of
+                                inputs, concatenated in one dataframe.
             y    (np.ndarray):   target
 
         Returns:
@@ -216,15 +215,15 @@ class Regressor(BaseEstimator):
         pred = self.model.predict(X)
         return rmse(pred, y)
 
-    def extract_subdatasets(self, X: pd.DataFrame) -> list:
+    def extract_subdatasets(self, X: np.ndarray) -> list:
         """
         Extracts different subdatasets from X (image, scalar, and constant).
         Based on the expected shapes, it splits X in three subdatasets and
         reshapes them. Il allows us to give a DataFrame as input for the model.
 
         Args:
-            X  (pd.DataFrame):   source DataFrame, containing all the type of
-                                 inputs, concatenated in one dataframe.
+            X  (np.ndarray):    source array, containing all the type of
+                                inputs, concatenated in one dataframe.
 
         Returns:
             list:  List of the 3 subdatasets
