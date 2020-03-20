@@ -47,4 +47,4 @@ if __name__ == "__main__":
     scores_test = model.compute_scores(X_array_test, y_test, name="_test")
 
     scores = pd.concat([scores_train, scores_test], axis=0)
-    save_scores(scores_train)
+    save_scores(scores)
