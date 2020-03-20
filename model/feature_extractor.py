@@ -138,7 +138,7 @@ class FeatureExtractor(object):
         Returns:
             None
         """
-        print("Starting FeatureExtractor fit")
+        logging.info("Starting FeatureExtractor fit")
         self.scaling_values.loc["windspeed", "mean"] = X_df["windspeed"].mean()
         self.scaling_values.loc["windspeed", "std"] = X_df["windspeed"].std()
         field_grids = []
@@ -160,7 +160,7 @@ class FeatureExtractor(object):
         for field in self.dummy_field:
             self.binarizer[field] = LabelBinarizer()
             self.binarizer[field].fit(X_df[field])
-        print("Fitting FeatureExtractor done")
+        logging.info("Fitting FeatureExtractor done")
 
     def compute_image(self, X_df: pd.DataFrame) -> np.ndarray:
         """
