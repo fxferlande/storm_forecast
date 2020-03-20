@@ -8,7 +8,7 @@ pipeline: install   ## run main project pipeline
 	main
 
 # PROJECT SETUP COMMANDS
-install: requirements-dev.txt  ## install project dependencies (requirements-dev.txt)
+install: ## install project dependencies (requirements-dev.txt)
 	bash install.sh
 	touch install
 
