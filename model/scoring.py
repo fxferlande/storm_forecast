@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score
+from settings.dev import OUTPUT_DIR
 
 
 def rmse(x, y):
@@ -53,11 +54,11 @@ def compute_scores(model, X, y):
     return scores
 
 
-def save_scores(path, model, train, y_train, test, y_test, name="scores",
+def save_scores(model, train, y_train, test, y_test, name="/scores",
                 message=""):
     scores_train = compute_scores(model, train, y_train)
     scores_test = compute_scores(model, test, y_test)
-    f = open(path + name + '.txt', 'w+')
+    f = open(OUTPUT_DIR + name + '.txt', 'w+')
     f.write("Scores train \n")
     for metric in scores_train.iterrows():
         f.write(str(metric[0]) + ": " + str(metric[1].Valeur) + "\n")

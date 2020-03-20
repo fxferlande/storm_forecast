@@ -12,7 +12,6 @@ from settings.dev import TRAIN_FILE, TEST_FILE
 seed(42)
 np.random.seed(42)
 os.environ['PYTHONHASHSEED'] = str(0)
-output_path = "output/"
 
 
 if __name__ == "__main__":
@@ -22,9 +21,9 @@ if __name__ == "__main__":
     X_train, y_train = read_data(TRAIN_FILE)
     X_test, y_test = read_data(TEST_FILE)
 
-    epoch = 1000
+    epoch = 1
     batch = 516
-    len_sequences = 5
+    len_sequences = 10
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
     feature_ext.fit(X_train, y_train)
@@ -38,9 +37,8 @@ if __name__ == "__main__":
 
     history = model.fit(X_array, y_train, do_cv)
 
-    plot_model(output_path, model.cnn_model)
+    plot_model(model.model)
 
-    save_model(output_path, model.cnn_model)
-    plot_history(output_path, history, do_cv)
-    save_scores(output_path, model, X_array, y_train, X_array_test, y_test,
-                message=message)
+    save_model(model.model)
+    plot_history(history, do_cv)
+    save_scores(model, X_array, y_train, X_array_test, y_test, message=message)
