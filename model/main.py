@@ -13,6 +13,7 @@ from settings.dev import TRAIN_FILE, TEST_FILE
 seed(42)
 np.random.seed(42)
 os.environ['PYTHONHASHSEED'] = str(0)
+os.environ['TF_DETERMINISTIC_OPS'] = '1'
 
 
 if __name__ == "__main__":

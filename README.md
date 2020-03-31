@@ -55,9 +55,15 @@ Goal : create a local virtual environment in the folder `./.venv/`.
 ```
 (path/to/here/.venv)$ make install
 ```
-It will automatically detect if you have CUDA installed and if you are using GPU, and install the appropriate librairies. 
+The version of tensorflow that is required (2.1.0) automatically used GPU when the drivers and the necessary libraries are installed (such as CUDA). For a proprer and easy installation of these, check the [tensorflow documentation](https://www.tensorflow.org/install/gpu). 
+
+*WARNING*: If you are using GPU, you must ensure determinism between successive runs (especially for optimizing hyperparameters). Please ensure you have the following lines at the beginning of the `main.py` file:
+```
+import os
+os.environ['TF_DETERMINISTIC_OPS'] = '1'
+```
 
 ## 3. Start coding
 
 To run the code, une the `make main` command, which will run the `model/main.py` file.
-*WARNING* by default, the backend used for Keras is Theano, because it ensures better determinism between successive runs, which is better if you want to tune the hyperparameters. If you want to change this, you need to pass the backend parameter to the make command as follow: `make backend=tensorflow main`.
+*WARNING* by default, the backend used for Keras is Tensorflow. If you want to change this, you need to pass the backend parameter to the make command as follow: `make backend=theano main`, if you want to use Theano backend for example.
