@@ -22,11 +22,10 @@ if __name__ == "__main__":
     epoch = 500
     batch = 516
     len_sequences = 10
+    horizon = 24
 
-    horizons = [30, 36, 42, 48]
-
-    X_train, y_train = read_data(TRAIN_FILE)
-    X_test, y_test = read_data(TEST_FILE)
+    X_train, y_train = read_data(TRAIN_FILE, horizon=horizon)
+    X_test, y_test = read_data(TEST_FILE, horizon=horizon)
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
     feature_ext.fit(X_train, y_train)
