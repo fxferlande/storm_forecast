@@ -51,11 +51,18 @@ Goal : create a local virtual environment in the folder `./.venv/`.
 
 
 ## 2. Install the project's requirements
+If you want to use GPU, you need to install the appropriate NVIDIA drivers and CUDA libraries first. For compatibility issues, you need to use the 10.1 version of CUDA. For a proprer and easy installation of these, check the [tensorflow documentation](https://www.tensorflow.org/install/gpu). The tensorflow library (version 2.1.0) will automatically use CUDA, there is no need to use the tensorflow-gpu library.
+You need to add the following line to your `.bashrc`:
 
+```
+export CUDA_HOME=/usr/local/cuda-10.1
+export LD_LIBRARY_PATH=${CUDA_HOME}/lib64:${CUDA_HOME}/extras/CUPTI/lib64:${LD_LIBRARY_PATH}
+```
+
+You can then activate your environment and install the libraries.
 ```
 (path/to/here/.venv)$ make install
 ```
-The version of tensorflow that is required (2.1.0) automatically used GPU when the drivers and the necessary libraries are installed (such as CUDA). For a proprer and easy installation of these, check the [tensorflow documentation](https://www.tensorflow.org/install/gpu). 
 
 *WARNING*: If you are using GPU, you must ensure determinism between successive runs (especially for optimizing hyperparameters). Please ensure you have the following lines at the beginning of the `main.py` file:
 ```

@@ -22,10 +22,10 @@ if __name__ == "__main__":
     epoch = 500
     batch = 516
     len_sequences = 10
-    horizon = 24
+    pred_horizon = 24
 
-    X_train, y_train = read_data(TRAIN_FILE, horizon=horizon)
-    X_test, y_test = read_data(TEST_FILE, horizon=horizon)
+    X_train, y_train = read_data(TRAIN_FILE, horizon=pred_horizon)
+    X_test, y_test = read_data(TEST_FILE, horizon=pred_horizon)
 
     feature_ext = FeatureExtractor(len_sequences=len_sequences)
     feature_ext.fit(X_train, y_train)
@@ -47,4 +47,5 @@ if __name__ == "__main__":
     scores_test = model.compute_scores(X_array_test, y_test, name="_test")
 
     scores = pd.concat([scores_train, scores_test], axis=0)
+    print(scores)
     save_scores(scores)
