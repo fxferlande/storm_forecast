@@ -166,8 +166,13 @@ class Regressor(BaseEstimator):
         """
         t = time.time()
         X = self.extract_subdatasets(X)
+
+        # Select indexes where len of sequence >=3 (i.e. padding < 8)
+        indexes = np.sum((X[1][:, :, -1] == -100)*1, axis=1)  \
+            <= self.len_sequences - 3
+        X = [x[indexes] for x in X]
         _, x, _ = X
-        y = y - x[:, self.len_sequences-1, 1]
+        y = y[indexes] - x[:, self.len_sequences-1, 1]
         if do_cv:
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,

@@ -21,7 +21,7 @@ if __name__ == "__main__":
     message = " "
     epoch = 500
     batch = 516
-    len_sequences = 10
+    len_sequences = 5
     pred_horizon = 24
 
     X_train, y_train = read_data(TRAIN_FILE, horizon=pred_horizon)
