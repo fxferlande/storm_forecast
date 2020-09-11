@@ -9,8 +9,7 @@ class FeatureExtractor(object):
     def __init__(self, len_sequences: int = 10):
         self.dummy_field = ["nature"]
         self.constant_fields = ['initial_max_wind', 'basin']
-        self.scalar_fields = ['instant_t', 'windspeed', 'latitude',
-                              'longitude', 'Jday_predictor',
+        self.scalar_fields = ['instant_t', 'windspeed', 'Jday_predictor',
                               'max_wind_change_12h', 'dist2land']
         self.spatial_fields = ["u", "v", "sst", "slp", "hum", "z", "vo700"]
         self.scaling_values = pd.DataFrame(index=self.spatial_fields +
