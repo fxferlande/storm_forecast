@@ -19,7 +19,7 @@ os.environ['TF_DETERMINISTIC_OPS'] = '1'
 if __name__ == "__main__":
     do_cv = False
     message = " "
-    epoch = 500
+    epoch = 400
     batch = 516
     len_sequences = 5
     pred_horizon = 24

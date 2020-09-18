@@ -42,9 +42,9 @@ class Regressor(BaseEstimator):
         Returns:
             None
         """
-        l2_weight = 1
-        l2_lstm = 10
-        l2_conv = 10
+        l2_weight = 2
+        l2_lstm = 2
+        l2_conv = 2
 
         img_in = Input(shape=(11, 11, 7))
         scalar_in = Input(shape=(self.len_sequences, self.num_scalar))
@@ -103,10 +103,10 @@ class Regressor(BaseEstimator):
         model_img = Activation("tanh")(model_img)
 
         model_scalar = scalar_in
-        activations = LSTM(self.len_lstm, activation='tanh',
+        activations = LSTM(self.len_lstm, activation='relu',
                            kernel_regularizer=l2(l2_lstm),
                            return_sequences=True)(model_scalar)
-        attention = Dense(1, activation='tanh')(activations)
+        attention = Dense(1, activation='relu')(activations)
         attention = Flatten()(attention)
         attention = Activation('softmax')(attention)
         attention = RepeatVector(self.len_lstm)(attention)
@@ -120,7 +120,8 @@ class Regressor(BaseEstimator):
         model_scalar = Dense(64)(sent_representation)
         model_scalar = Activation("tanh")(model_scalar)
 
-        model_scalar_2 = Conv1D(64, 3, padding="same")(scalar_in)
+        model_scalar_2 = Conv1D(32, 3, padding="same",
+                                kernel_regularizer=l2(l2_conv))(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
         model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(
@@ -167,9 +168,8 @@ class Regressor(BaseEstimator):
         t = time.time()
         X = self.extract_subdatasets(X)
 
-        # Select indexes where len of sequence >=3 (i.e. padding < 8)
         indexes = np.sum((X[1][:, :, -1] == -100)*1, axis=1)  \
-            <= self.len_sequences - 3
+            <= 10
         X = [x[indexes] for x in X]
         _, x, _ = X
         y = y[indexes] - x[:, self.len_sequences-1, 1]
