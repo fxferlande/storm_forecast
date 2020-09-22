@@ -6,6 +6,10 @@ from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestRegressor
 from model.scoring import rmse
 
+PARAMS = dict(n_estimators=1000,
+              max_depth=5,
+              max_features=10)
+
 
 class Regressor(BaseEstimator):
     def __init__(self):
@@ -17,7 +21,7 @@ class Regressor(BaseEstimator):
         Returns:
             None
         """
-        self.model = RandomForestRegressor()
+        self.model = RandomForestRegressor(**PARAMS)
 
     def fit(self, X: np.ndarray, y: np.ndarray, do_cv: bool = False,
             verbose: int = 1) -> None:
