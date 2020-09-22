@@ -121,7 +121,8 @@ class Regressor(BaseEstimator):
         model_scalar = Activation("tanh")(model_scalar)
 
         model_scalar_2 = Conv1D(32, 3, padding="same",
-                                kernel_regularizer=l2(l2_conv))(scalar_in)
+                                kernel_regularizer=l2(self.len_sequences)
+                                )(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
         model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(
