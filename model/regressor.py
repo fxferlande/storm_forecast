@@ -261,12 +261,6 @@ class Regressor(BaseEstimator):
         weight = len_sequences/max(len_sequences)
         scores.loc["cust_rmse{}".format(name)] = weighted_rmse(pred, y, weight)
 
-        idx_inf = len_sequences < 5
-        scores.loc["rmse_inf{}".format(name)] = rmse(pred[idx_inf], [idx_inf])
-
-        idx_sup = len_sequences >= 5
-        scores.loc["rmse_sup{}".format(name)] = rmse(pred[idx_sup], [idx_sup])
-
         return scores
 
     def get_params(self, deep: bool = True) -> dict:
