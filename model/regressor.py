@@ -10,6 +10,8 @@ from keras.layers import Concatenate, Dropout, Activation, Dense, Input, \
 from keras.models import Model
 from keras.regularizers import l2
 from keras.callbacks.callbacks import History
+from keras.optimizers import Adam
+
 from model.scoring import rmse, weighted_rmse
 
 
@@ -18,6 +20,11 @@ class Regressor(BaseEstimator):
                  batch=128, len_sequences=5, len_lstm=4):
         self.epochs = epochs
         self.batch = batch
+        self.l2_weight = 4e-2
+        self.l2_lstm = 3e-2
+        self.l2_conv = 3e-2
+        self.lr = 0.00005
+
         self.len_sequences = len_sequences
         self.len_lstm = len_lstm
         self.num_scalar = num_scalar
@@ -42,9 +49,6 @@ class Regressor(BaseEstimator):
         Returns:
             None
         """
-        l2_weight = 2
-        l2_lstm = 2
-        l2_conv = 2
 
         img_in = Input(shape=(11, 11, 7))
         scalar_in = Input(shape=(self.len_sequences, self.num_scalar))
@@ -52,59 +56,60 @@ class Regressor(BaseEstimator):
 
         model_img = img_in
         model_img = Conv2D(32, (5, 5), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
         model_img = Conv2D(32, (5, 5), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         model_img = Conv2D(32, (5, 5), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
         model_img = Conv2D(64, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
         model_img = Conv2D(64, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         model_img = Conv2D(64, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
         model_img = Conv2D(128, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         img_shortcut = model_img
         model_img = Conv2D(128, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = LeakyReLU(alpha=0.5)(model_img)
 
         model_img = Conv2D(128, (3, 3), padding="same",
-                           kernel_regularizer=l2(l2_conv))(model_img)
+                           kernel_regularizer=l2(self.l2_conv))(model_img)
         model_img = Add()([model_img, img_shortcut])
         model_img = LeakyReLU(alpha=0.5)(model_img)
         model_img = MaxPooling2D()(model_img)
 
         model_img = Flatten()(model_img)
 
-        model_img = Dense(128, kernel_regularizer=l2(l2_weight))(model_img)
+        model_img = Dense(128, kernel_regularizer=l2(self.l2_weight))(
+            model_img)
         model_img = Dropout(0.15)(model_img)
         model_img = Activation("tanh")(model_img)
 
         model_scalar = scalar_in
         activations = LSTM(self.len_lstm, activation='relu',
-                           kernel_regularizer=l2(l2_lstm),
+                           kernel_regularizer=l2(self.l2_lstm),
                            return_sequences=True)(model_scalar)
         attention = Dense(1, activation='relu')(activations)
         attention = Flatten()(attention)
@@ -117,34 +122,36 @@ class Regressor(BaseEstimator):
                                      output_shape=(self.len_lstm,))(
                                      sent_representation)
         model_scalar = Dense(128)(sent_representation)
-        model_scalar = Dense(64)(sent_representation)
+        model_scalar = Dropout(0.1)(model_scalar)
+        model_scalar = Dense(64)(model_scalar)
         model_scalar = Activation("tanh")(model_scalar)
 
         model_scalar_2 = Conv1D(32, 3, padding="same",
-                                kernel_regularizer=l2(l2_conv)
+                                kernel_regularizer=l2(self.l2_conv)
                                 )(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
-        model_scalar_2 = Dense(16, kernel_regularizer=l2(l2_weight))(
+        model_scalar_2 = Dense(16, kernel_regularizer=l2(self.l2_weight))(
             model_scalar_2)
-        model_scalar_2 = Dropout(0.3)(model_scalar_2)
+        model_scalar_2 = Dropout(0.2)(model_scalar_2)
         model_scalar_2 = Activation("tanh")(model_scalar_2)
 
         model_const = const_in
-        model_const = Dense(64, kernel_regularizer=l2(l2_weight))(model_const)
+        model_const = Dense(64, kernel_regularizer=l2(self.l2_weight))(
+            model_const)
         model_const = Activation("tanh")(model_const)
 
         model = Concatenate()([model_img, model_scalar, model_scalar_2,
                                model_const])
 
-        model = Dense(64, kernel_regularizer=l2(l2_weight))(model)
-        model = Dropout(0.3)(model)
+        model = Dense(64, kernel_regularizer=l2(self.l2_weight))(model)
+        model = Dropout(0.2)(model)
         model = Activation("tanh")(model)
 
         model = Dense(1)(model)
 
         self.model = Model([img_in, scalar_in, const_in], model)
-        self.model.compile(loss="mse", optimizer="adam")
+        self.model.compile(loss="mse", optimizer=Adam(learning_rate=self.lr))
 
         if verbose == 1:
             print(self.model.summary())
