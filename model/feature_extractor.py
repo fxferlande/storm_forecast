@@ -125,6 +125,17 @@ class FeatureExtractor(object):
             self.scalar_fields.append("diff_current_init")
         return X_df
 
+    def compute_aggregate_image(self, X_df) -> pd.DataFrame:
+        for field in self.spatial_fields:
+            f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
+            f_data = X_df[f_cols]
+            X_df = X_df.drop(f_cols, axis=1)
+            X_df[field] = np.nanmean(f_data, axis=1)
+            X_df[field].fillna(0, inplace=True)
+            if field not in self.scalar_fields:
+                self.scalar_fields.append(field)
+        return X_df
+
     def fit(self, X_df: pd.DataFrame, y: np.ndarray = None) -> None:
         """
         Calculates mean and std values for each field. Image fields are
@@ -150,6 +161,7 @@ class FeatureExtractor(object):
             self.scaling_values.loc[field, "std"] = np.nanstd(field_grids[f])
         X_df = self.compute_bearing(X_df)
         X_df = self.cross_features(X_df)
+        X_df = self.compute_aggregate_image(X_df)
         for field in self.scalar_fields:
             self.scaling_values.loc[field, "mean"] = X_df[field].mean()
             self.scaling_values.loc[field, "std"] = X_df[field].std()
@@ -199,6 +211,7 @@ class FeatureExtractor(object):
         """
         scalar = self.compute_bearing(X_df)
         scalar = self.cross_features(scalar)
+        scalar = self.compute_aggregate_image(scalar)
         scalar = scalar[self.scalar_fields]
         scalar["stormid"] = X_df["stormid"]
         final_scalar = np.empty((len(scalar), self.len_sequences,
