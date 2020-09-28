@@ -121,7 +121,7 @@ class Regressor(BaseEstimator):
         model_scalar = Activation("tanh")(model_scalar)
 
         model_scalar_2 = Conv1D(32, 3, padding="same",
-                                kernel_regularizer=l2(self.len_sequences)
+                                kernel_regularizer=l2(l2_conv)
                                 )(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
@@ -173,6 +173,9 @@ class Regressor(BaseEstimator):
             <= 10
         X = [x[indexes] for x in X]
         _, x, _ = X
+        self.target_mean = y.mean()
+        self.target_std = y.std()
+        y = (y - self.target_mean)/self.target_std
         y = y[indexes] - x[:, self.len_sequences-1, 1]
         if do_cv:
             history = self.model.fit(X, y, epochs=self.epochs,
@@ -203,6 +206,7 @@ class Regressor(BaseEstimator):
         _, x, _ = X
         pred = self.model.predict(X).ravel() + \
             x[:, self.len_sequences-1, 1]
+        pred = pred*self.target_std + self.target_mean
         return pred
 
     def extract_subdatasets(self, X: np.ndarray) -> list:
