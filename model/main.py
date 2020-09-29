@@ -20,7 +20,7 @@ if __name__ == "__main__":
     do_cv = True
     message = " "
     epoch = 250
-    batch = 250
+    batch = 200
     len_sequences = 5
     pred_horizon = 24
 
