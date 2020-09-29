@@ -115,10 +115,10 @@ class FeatureExtractor(object):
             X_df["initial_max_wind"]
         if "mw12_imw" not in self.scalar_fields:
             self.scalar_fields.append("mw12_imw")
-        X_df["diff_current_max"] = X_df["windspeed"] - \
+        X_df["diff_init_max"] = X_df["initial_max_wind"] - \
             X_df["max_wind_change_12h"]
-        if "diff_current_max" not in self.scalar_fields:
-            self.scalar_fields.append("diff_current_max")
+        if "diff_init_max" not in self.scalar_fields:
+            self.scalar_fields.append("diff_init_max")
         X_df["diff_current_init"] = X_df["windspeed"] - \
             X_df["initial_max_wind"]
         if "diff_current_init" not in self.scalar_fields:
