@@ -11,22 +11,23 @@ from keras.models import Model
 from keras.regularizers import l2
 from keras.callbacks.callbacks import History
 from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
 
 from model.scoring import rmse, weighted_rmse
 
 
 class Regressor(BaseEstimator):
     def __init__(self, num_scalar=12, num_const=7, epochs=200,
-                 batch=128, len_sequences=5, len_lstm=4):
+                 batch=128, len_sequences=5):
         self.epochs = epochs
         self.batch = batch
+        self.len_lstm = 8
         self.l2_weight = 4e-2
         self.l2_lstm = 3e-2
         self.l2_conv = 3e-2
         self.lr = 0.00005
 
         self.len_sequences = len_sequences
-        self.len_lstm = len_lstm
         self.num_scalar = num_scalar
         self.num_const = num_const
 
@@ -124,6 +125,7 @@ class Regressor(BaseEstimator):
         model_scalar = Dense(128)(sent_representation)
         model_scalar = Dropout(0.1)(model_scalar)
         model_scalar = Dense(64)(model_scalar)
+        model_scalar = Dense(32)(model_scalar)
         model_scalar = Activation("tanh")(model_scalar)
 
         model_scalar_2 = Conv1D(32, 3, padding="same",
@@ -184,15 +186,19 @@ class Regressor(BaseEstimator):
         self.target_std = y.std()
         y = (y - self.target_mean)/self.target_std
         y = y[indexes] - x[:, self.len_sequences-1, 1]
+        callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
+                                 patience=50)
         if do_cv:
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
-                                     validation_split=0.2)
+                                     validation_split=0.2,
+                                     callbacks=[callback])
         else:
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
-                                     verbose=verbose)
+                                     verbose=verbose,
+                                     callbacks=[callback])
         duration = int((time.time()-t)/60)
         logging.info("Training done in {:.0f} mins".format(duration))
         return history
