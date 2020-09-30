@@ -148,7 +148,7 @@ class Regressor(BaseEstimator):
                                      callbacks=[callback])
         else:
             callback = EarlyStopping(monitor='loss', min_delta=0.01,
-                                     patience=100)
+                                     patience=50)
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
