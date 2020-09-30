@@ -138,15 +138,17 @@ class Regressor(BaseEstimator):
         self.target_std = y.std()
         y = (y - self.target_mean)/self.target_std
         y = y[indexes] - x[:, self.len_sequences-1, 1]
-        callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
-                                 patience=100)
         if do_cv:
+            callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
+                                     patience=100)
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
                                      validation_split=0.2,
                                      callbacks=[callback])
         else:
+            callback = EarlyStopping(monitor='loss', min_delta=0.01,
+                                     patience=100)
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
