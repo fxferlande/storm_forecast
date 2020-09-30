@@ -129,7 +129,7 @@ class Regressor(BaseEstimator):
         t = time.time()
         X = self.extract_subdatasets(X)
 
-        indexes = np.sum((X[1][:, :, -1] == -100)*1, axis=1)  \
+        indexes = np.sum((X[0][:, -1] == -100)*1, axis=1)  \
             <= 10
         X = [x[indexes] for x in X]
         x, _ = X
@@ -222,7 +222,7 @@ class Regressor(BaseEstimator):
         scores = pd.Series()
         pred = self.predict(X)
         X_array = self.extract_subdatasets(X)
-        len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
+        len_sequences = np.sum(((X_array[0] > -10)*1)[:, 1], axis=1)
 
         scores.loc["RMSE{}".format(name)] = rmse(pred, y)
 
