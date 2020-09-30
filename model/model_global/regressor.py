@@ -17,15 +17,15 @@ from model.scoring import rmse, weighted_rmse
 
 
 class Regressor(BaseEstimator):
-    def __init__(self, num_scalar=12, num_const=7, epochs=200,
-                 batch=128, len_sequences=5):
-        self.epochs = epochs
-        self.batch = batch
-        self.len_lstm = 8
-        self.l2_weight = 4e-2
-        self.l2_lstm = 3e-2
+    def __init__(self, num_scalar=12, num_const=7, len_sequences=5):
+        self.epochs = 200
+        self.batch = 100
+        self.len_lstm = 32
+        self.len_conv = 128
+        self.l2_weight = 4e-3
+        self.l2_lstm = 3e-5
         self.l2_conv = 3e-2
-        self.lr = 0.00005
+        self.lr = 0.0001
 
         self.len_sequences = len_sequences
         self.num_scalar = num_scalar
@@ -105,7 +105,7 @@ class Regressor(BaseEstimator):
 
         model_img = Dense(128, kernel_regularizer=l2(self.l2_weight))(
             model_img)
-        model_img = Dropout(0.15)(model_img)
+        model_img = Dropout(0.3)(model_img)
         model_img = Activation("tanh")(model_img)
 
         model_scalar = scalar_in
@@ -122,17 +122,19 @@ class Regressor(BaseEstimator):
         sent_representation = Lambda(lambda xin: K.sum(xin, axis=-2),
                                      output_shape=(self.len_lstm,))(
                                      sent_representation)
-        model_scalar = Dense(128)(sent_representation)
+        model_scalar = Dense(256)(sent_representation)
         model_scalar = Dropout(0.1)(model_scalar)
         model_scalar = Dense(64)(model_scalar)
         model_scalar = Dense(32)(model_scalar)
         model_scalar = Activation("tanh")(model_scalar)
 
-        model_scalar_2 = Conv1D(32, 3, padding="same",
-                                kernel_regularizer=l2(self.l2_conv)
+        model_scalar_2 = Conv1D(self.len_conv, 3, padding="same",
+                                kernel_regularizer=l2(3e-5)
                                 )(scalar_in)
         model_scalar_2 = Activation("selu")(model_scalar_2)
         model_scalar_2 = Flatten()(model_scalar_2)
+        model_scalar_2 = Dense(32, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_2)
         model_scalar_2 = Dense(16, kernel_regularizer=l2(self.l2_weight))(
             model_scalar_2)
         model_scalar_2 = Dropout(0.2)(model_scalar_2)
@@ -146,8 +148,11 @@ class Regressor(BaseEstimator):
         model = Concatenate()([model_img, model_scalar, model_scalar_2,
                                model_const])
 
+        model = Dense(128, kernel_regularizer=l2(self.l2_weight))(model)
         model = Dense(64, kernel_regularizer=l2(self.l2_weight))(model)
+        model = Activation("tanh")(model)
         model = Dropout(0.2)(model)
+        model = Dense(32, kernel_regularizer=l2(self.l2_weight))(model)
         model = Activation("tanh")(model)
 
         model = Dense(1)(model)
@@ -186,15 +191,17 @@ class Regressor(BaseEstimator):
         self.target_std = y.std()
         y = (y - self.target_mean)/self.target_std
         y = y[indexes] - x[:, self.len_sequences-1, 1]
-        callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
-                                 patience=50)
         if do_cv:
+            callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
+                                     patience=100)
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
                                      validation_split=0.2,
                                      callbacks=[callback])
         else:
+            callback = EarlyStopping(monitor='loss', min_delta=0.1,
+                                     patience=50)
             history = self.model.fit(X, y, epochs=self.epochs,
                                      batch_size=self.batch,
                                      verbose=verbose,
