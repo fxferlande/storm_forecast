@@ -6,12 +6,12 @@ from settings.dev import OUTPUT_DIR
 def plot_history(history, do_cv=False, name="/model_loss"):
     keys = list(history.history.keys())
     plt.figure()
-    plt.plot(history.history[keys[0]], label="train")
+    plt.plot(history.history[keys[0]], label=keys[0])
     plt.title('Loss')
     plt.ylabel('loss')
     plt.xlabel('epoch')
     if do_cv:
-        plt.plot(history.history[keys[1]], label="test")
+        plt.plot(history.history[keys[1]], label=keys[1])
         plt.title('Loss')
         plt.ylabel('loss')
         plt.xlabel('epoch')
