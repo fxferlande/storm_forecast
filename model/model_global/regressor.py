@@ -12,17 +12,18 @@ from keras.regularizers import l2
 from keras.callbacks.callbacks import History
 from keras.optimizers import Adam
 from keras.callbacks import EarlyStopping
+import tensorflow as tf
 
-from model.scoring import rmse, weighted_rmse
+from model.scoring import rmse
 
 
 class Regressor(BaseEstimator):
     def __init__(self, num_scalar=12, num_const=7, len_sequences=5):
-        self.epochs = 200
-        self.batch = 100
+        self.epochs = 500
+        self.batch = 500
         self.len_lstm = 32
         self.len_conv = 128
-        self.l2_weight = 4e-3
+        self.l2_weight = 4e-4
         self.l2_lstm = 3e-5
         self.l2_conv = 3e-2
         self.lr = 0.0001
@@ -105,8 +106,15 @@ class Regressor(BaseEstimator):
 
         model_img = Dense(128, kernel_regularizer=l2(self.l2_weight))(
             model_img)
-        model_img = Dropout(0.3)(model_img)
         model_img = Activation("tanh")(model_img)
+
+        model_img = Dense(128, kernel_regularizer=l2(self.l2_weight))(
+            model_img)
+        model_img = Dense(64, kernel_regularizer=l2(self.l2_weight))(model_img)
+        model_img = Dropout(0.2)(model_img)
+        model_img = Dense(32, kernel_regularizer=l2(self.l2_weight))(model_img)
+        model_img = Dense(16, kernel_regularizer=l2(self.l2_weight))(model_img)
+        model_img = Dense(8, kernel_regularizer=l2(self.l2_weight))(model_img)
 
         model_scalar = scalar_in
         activations = LSTM(self.len_lstm, activation='relu',
@@ -140,25 +148,42 @@ class Regressor(BaseEstimator):
         model_scalar_2 = Dropout(0.2)(model_scalar_2)
         model_scalar_2 = Activation("tanh")(model_scalar_2)
 
+        model_scalar_total = Concatenate()([model_scalar, model_scalar_2])
+
+        model_scalar_total = Dense(128, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+        model_scalar_total = Dense(64, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+        model_scalar_total = Dense(64, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+        model_scalar_total = Dropout(0.2)(model_scalar_total)
+        model_scalar_total = Dense(32, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+        model_scalar_total = Dense(16, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+        model_scalar_total = Dense(8, kernel_regularizer=l2(self.l2_weight))(
+            model_scalar_total)
+
         model_const = const_in
         model_const = Dense(64, kernel_regularizer=l2(self.l2_weight))(
             model_const)
         model_const = Activation("tanh")(model_const)
 
-        model = Concatenate()([model_img, model_scalar, model_scalar_2,
-                               model_const])
+        model_const = Dense(64, kernel_regularizer=l2(self.l2_weight))(
+            model_const)
+        model_const = Dropout(0.3)(model_const)
+        model_const = Dense(32, kernel_regularizer=l2(self.l2_weight))(
+            model_const)
+        model_const = Dense(16, kernel_regularizer=l2(self.l2_weight))(
+            model_const)
+        model_const = Dense(8, kernel_regularizer=l2(self.l2_weight))(
+            model_const)
 
-        model = Dense(128, kernel_regularizer=l2(self.l2_weight))(model)
-        model = Dense(64, kernel_regularizer=l2(self.l2_weight))(model)
-        model = Activation("tanh")(model)
-        model = Dropout(0.2)(model)
-        model = Dense(32, kernel_regularizer=l2(self.l2_weight))(model)
-        model = Activation("tanh")(model)
-
-        model = Dense(1)(model)
+        model = Concatenate()([model_img, model_scalar_total, model_const])
+        model = Dense(3)(model)
 
         self.model = Model([img_in, scalar_in, const_in], model)
-        self.model.compile(loss="mse", optimizer=Adam(learning_rate=self.lr))
+        self.model.compile(loss=qloss, optimizer=Adam(learning_rate=self.lr))
 
         if verbose == 1:
             print(self.model.summary())
@@ -224,9 +249,11 @@ class Regressor(BaseEstimator):
         """
         X = self.extract_subdatasets(X)
         _, x, _ = X
-        pred = self.model.predict(X).ravel() + \
-            x[:, self.len_sequences-1, 1]
+        pred = self.model.predict(X) + \
+            np.repeat(x[:, self.len_sequences-1, 1].reshape((-1, 1)),
+                      repeats=3, axis=1)
         pred = pred*self.target_std + self.target_mean
+        pred[pred < 0] = 0
         return pred
 
     def extract_subdatasets(self, X: np.ndarray) -> list:
@@ -270,20 +297,21 @@ class Regressor(BaseEstimator):
             float:  rmse of predictions
         """
         X = self.extract_subdatasets(X)
-        pred = self.model.predict(X)
+        pred = self.model.predict(X)[:, 1]
         return rmse(pred, y)
 
     def compute_scores(self, X: np.ndarray, y: np.ndarray,
                        name: str = "") -> pd.Series:
         scores = pd.Series()
         pred = self.predict(X)
-        X_array = self.extract_subdatasets(X)
-        len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
 
-        scores.loc["RMSE{}".format(name)] = rmse(pred, y)
+        scores.loc["RMSE{}".format(name)] = rmse(pred[:, 1], y)
 
-        weight = len_sequences/max(len_sequences)
-        scores.loc["cust_rmse{}".format(name)] = weighted_rmse(pred, y, weight)
+        scores.loc["conf_interval_prop_{}"
+                   .format(name)] = conf_interval_prop(y, pred)
+
+        scores.loc["conf_interval_size_{}"
+                   .format(name)] = conf_interval_size(pred)
 
         return scores
 
@@ -314,3 +342,27 @@ class Regressor(BaseEstimator):
             setattr(self, parameter, value)
         self.init_model(verbose=0)
         return self
+
+
+def qloss(y_true, y_pred):
+    # y_pred of dimension 3
+    qs = [0.1, 0.50, 0.9]
+    q = tf.constant(np.array([qs]), dtype=tf.float32)
+    err = y_true - y_pred
+    v = tf.maximum(q*err, (q-1)*err)
+    return K.mean(v)
+
+
+def conf_interval_prop(y_true, y_pred):
+    # y_pred of dimension 3
+    upper_bound = y_true <= y_pred[:, 2]
+    lower_bound = y_true >= y_pred[:, 0]
+
+    between_interval = np.logical_and(upper_bound, lower_bound)
+
+    return np.mean(between_interval)
+
+
+def conf_interval_size(y_pred):
+    diff = y_pred[:, 2] - y_pred[:, 0]
+    return np.mean(diff)
