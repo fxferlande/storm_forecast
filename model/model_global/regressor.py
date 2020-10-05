@@ -211,7 +211,7 @@ class Regressor(BaseEstimator):
         self.target_mean = y.mean()
         self.target_std = y.std()
         y = (y - self.target_mean)/self.target_std
-        y = y[indexes] - x[:, self.len_sequences-1, 1]
+        y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
             callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
                                      patience=100)
@@ -300,6 +300,8 @@ class Regressor(BaseEstimator):
                        name: str = "") -> pd.Series:
         scores = pd.Series()
         pred = self.predict(X)
+        X_array = self.extract_subdatasets(X)
+        len_sequences = np.sum(((X_array[1] > -10)*1)[:, :, 1], axis=1)
 
         scores.loc["RMSE{}".format(name)] = rmse(pred[:, 1], y)
 
@@ -308,6 +310,14 @@ class Regressor(BaseEstimator):
 
         scores.loc["conf_interval_size_{}"
                    .format(name)] = conf_interval_size(pred)
+
+        idx_inf = len_sequences < 3
+        scores.loc["rmse_inf{}".format(name)] = rmse(pred[idx_inf, 1],
+                                                     y[idx_inf])
+
+        idx_sup = len_sequences >= 3
+        scores.loc["rmse_sup{}".format(name)] = rmse(pred[idx_sup, 1],
+                                                     y[idx_sup])
 
         return scores
 
