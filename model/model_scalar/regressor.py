@@ -129,15 +129,12 @@ class Regressor(BaseEstimator):
         t = time.time()
         X = self.extract_subdatasets(X)
 
-        indexes = np.sum((X[0][:, -1] == -100)*1, axis=1)  \
-            <= 10
-        X = [x[indexes] for x in X]
         x, _ = X
 
         self.target_mean = y.mean()
         self.target_std = y.std()
         y = (y - self.target_mean)/self.target_std
-        y = y[indexes] - x[:, self.len_sequences-1, 1]
+        y = y - x[:, self.len_sequences-1, 1]
         if do_cv:
             callback = EarlyStopping(monitor='val_loss', min_delta=0.01,
                                      patience=100)

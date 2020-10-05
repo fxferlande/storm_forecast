@@ -207,10 +207,6 @@ class Regressor(BaseEstimator):
         """
         t = time.time()
         X = self.extract_subdatasets(X)
-
-        indexes = np.sum((X[1][:, :, -1] == -100)*1, axis=1)  \
-            <= 10
-        X = [x[indexes] for x in X]
         _, x, _ = X
         self.target_mean = y.mean()
         self.target_std = y.std()
