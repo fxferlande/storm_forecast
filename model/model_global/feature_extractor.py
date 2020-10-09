@@ -125,6 +125,14 @@ class FeatureExtractor(object):
             self.scalar_fields.append("diff_current_init")
         return X_df
 
+    def compute_difference(self, X_df):
+        X_df = X_df.sort_values(["stormid", "instant_t"])
+        X_df["w_diff"] = X_df["windspeed"] - X_df["windspeed"].shift()
+        X_df.loc[X_df['instant_t'] == 0, "w_diff"] = 0
+        if "w_diff" not in self.constant_fields:
+            self.constant_fields.append("w_diff")
+        return X_df
+
     def compute_aggregate_image(self, X_df) -> pd.DataFrame:
         for field in self.spatial_fields:
             f_cols = X_df.columns[X_df.columns.str.contains(field + "_")]
@@ -162,6 +170,7 @@ class FeatureExtractor(object):
         X_df = self.compute_bearing(X_df)
         X_df = self.cross_features(X_df)
         X_df = self.compute_aggregate_image(X_df)
+        X_df = self.compute_difference(X_df)
         for field in self.scalar_fields:
             self.scaling_values.loc[field, "mean"] = X_df[field].mean()
             self.scaling_values.loc[field, "std"] = X_df[field].std()
@@ -209,10 +218,10 @@ class FeatureExtractor(object):
             np.ndarray:   Array of size
                         (len(X_df), self.len_sequences*len(self.scalar_fields))
         """
-        scalar = self.compute_bearing(X_df)
-        scalar = self.cross_features(scalar)
-        scalar = self.compute_aggregate_image(scalar)
-        scalar = scalar[self.scalar_fields]
+        X_df = self.compute_bearing(X_df)
+        X_df = self.cross_features(X_df)
+        X_df = self.compute_aggregate_image(X_df)
+        scalar = X_df[self.scalar_fields]
         scalar["stormid"] = X_df["stormid"]
         final_scalar = np.empty((len(scalar), self.len_sequences,
                                  len(self.scalar_fields)))
@@ -236,6 +245,7 @@ class FeatureExtractor(object):
         Returns:
             np.ndarray:   Array of constant features
         """
+        X_df = self.compute_difference(X_df)
         norm_constant = X_df[self.constant_fields]
         for field in self.constant_fields:
             norm_constant[field] = (norm_constant[field] -
