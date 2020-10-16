@@ -43,6 +43,7 @@ def read_data(dataset: str, horizon: int = 24) -> (pd.DataFrame, np.ndarray):
 
 
 def save_model(model, name: str = 'model') -> None:
+    # unused
     """
     Saves the keras model in .h5 format in OUTPUT_DIR.
     Args:

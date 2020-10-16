@@ -3,11 +3,11 @@ import numpy as np
 import pandas as pd
 from numpy.random import seed
 
-from model.read_write import read_data, save_model
+from model.read_write import read_data
 from model.model_global.feature_extractor import FeatureExtractor
 from model.model_global.regressor import Regressor
 from model.scoring import save_scores
-from model.plots import plot_model, plot_history
+from model.plots import plot_history
 from settings.dev import TRAIN_FILE, TEST_FILE
 
 seed(42)
@@ -37,9 +37,6 @@ if __name__ == "__main__":
 
     history = model.fit(X_array, y_train, do_cv)
 
-    plot_model(model.model)
-
-    save_model(model.model)
     plot_history(history, do_cv)
     scores_train = model.compute_scores(X_array, y_train, name="_train")
     scores_test = model.compute_scores(X_array_test, y_test, name="_test")
