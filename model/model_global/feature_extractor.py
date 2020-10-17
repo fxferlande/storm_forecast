@@ -282,3 +282,37 @@ class FeatureExtractor(object):
                                 norm_constant_final), axis=1)
         logging.info("FeatureExtractor transform done")
         return final
+
+    def extract_subdatasets(self, X: np.ndarray) -> list:
+        """
+        Extracts different subdatasets from X (image, scalar, and constant).
+        Based on the expected shapes, it splits X in three subdatasets and
+        reshapes them. Il allows us to give a DataFrame as input for the model.
+
+        Args:
+            X  (np.ndarray):    source array, containing all the type of
+                                inputs, concatenated in one dataframe.
+
+        Returns:
+            list:  List of the 3 subdatasets
+        """
+        break_images = 11*11*7
+        break_scalar = break_images + \
+            self.len_sequences*len(self.scalar_fields)
+        break_const = break_scalar + len(self.constant_fields)
+        num_samples = len(X)
+
+        shape_image = (num_samples, 11, 11, 7)
+        shape_scalar = (num_samples, self.len_sequences,
+                        len(self.scalar_fields))
+
+        norm_images = np.reshape(X[:, :break_images], shape_image)
+        norm_scalar = np.reshape(X[:, break_images:break_scalar], shape_scalar)
+        norm_const = X[:, break_scalar: break_const]
+
+        return [norm_images, norm_scalar, norm_const]
+
+    def restrict_sequences(self, X_transformed, max_padding):
+        X = self.extract_subdatasets(X_transformed)
+        idx = np.sum((X[1][:, :, 1] == -100)*1, axis=1) <= max_padding
+        return X_transformed[idx]

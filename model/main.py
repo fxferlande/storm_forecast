@@ -22,6 +22,7 @@ if __name__ == "__main__":
 
     len_sequences = 5
     pred_horizon = 24
+    max_padding = len_sequences
 
     X_train, y_train = read_data(TRAIN_FILE, horizon=pred_horizon)
     X_test, y_test = read_data(TEST_FILE, horizon=pred_horizon)
@@ -30,6 +31,8 @@ if __name__ == "__main__":
     feature_ext.fit(X_train, y_train)
     X_array = feature_ext.transform(X_train)
     X_array_test = feature_ext.transform(X_test)
+
+    X_array = feature_ext.restrict_sequences(X_array, max_padding=max_padding)
 
     model = Regressor(num_scalar=len(feature_ext.scalar_fields),
                       num_const=len(feature_ext.constant_fields),
