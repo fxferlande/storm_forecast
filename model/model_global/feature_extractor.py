@@ -19,6 +19,7 @@ class FeatureExtractor(object):
                                            dtype=float)
         self.binarizer = {}
         self.len_sequences = len_sequences
+        self.num_dummy = 0
 
     def make_sequence(self, X_df: pd.DataFrame, field: str,
                       padding_value: int = -100) -> np.ndarray:
@@ -180,6 +181,7 @@ class FeatureExtractor(object):
         for field in self.dummy_field:
             self.binarizer[field] = LabelBinarizer()
             self.binarizer[field].fit(X_df[field])
+            self.num_dummy += len(self.binarizer[field].classes_)
         logging.info("Fitting FeatureExtractor done")
 
     def compute_image(self, X_df: pd.DataFrame) -> np.ndarray:
@@ -299,7 +301,7 @@ class FeatureExtractor(object):
         break_images = 11*11*7
         break_scalar = break_images + \
             self.len_sequences*len(self.scalar_fields)
-        break_const = break_scalar + len(self.constant_fields)
+        break_const = break_scalar + len(self.constant_fields) + self.num_dummy
         num_samples = len(X)
 
         shape_image = (num_samples, 11, 11, 7)

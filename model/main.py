@@ -35,7 +35,8 @@ if __name__ == "__main__":
     X_array = feature_ext.restrict_sequences(X_array, max_padding=max_padding)
 
     model = Regressor(num_scalar=len(feature_ext.scalar_fields),
-                      num_const=len(feature_ext.constant_fields),
+                      num_const=len(feature_ext.constant_fields) +
+                      feature_ext.num_dummy,
                       len_sequences=len_sequences)
 
     history = model.fit(X_array, y_train, do_cv)

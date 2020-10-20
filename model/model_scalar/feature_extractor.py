@@ -7,8 +7,8 @@ pd.set_option('mode.chained_assignment', None)
 
 class FeatureExtractor(object):
     def __init__(self, len_sequences: int = 10):
-        self.dummy_field = ["nature"]
-        self.constant_fields = ['initial_max_wind', 'basin']
+        self.dummy_field = ["nature", 'basin']
+        self.constant_fields = ['initial_max_wind']
         self.scalar_fields = ['instant_t', 'windspeed', 'Jday_predictor',
                               'max_wind_change_12h', 'dist2land']
         self.spatial_fields = ["u", "v", "sst", "slp", "hum", "z", "vo700"]
@@ -19,6 +19,7 @@ class FeatureExtractor(object):
                                            dtype=float)
         self.binarizer = {}
         self.len_sequences = len_sequences
+        self.num_dummy = 0
 
     def make_sequence(self, X_df: pd.DataFrame, field: str,
                       padding_value: int = -100) -> np.ndarray:
@@ -164,6 +165,7 @@ class FeatureExtractor(object):
         for field in self.dummy_field:
             self.binarizer[field] = LabelBinarizer()
             self.binarizer[field].fit(X_df[field])
+            self.num_dummy += len(self.binarizer[field].classes_)
         logging.info("Fitting FeatureExtractor done")
 
     def compute_scalar(self, X_df: pd.DataFrame) -> np.ndarray:

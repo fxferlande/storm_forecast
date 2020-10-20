@@ -143,9 +143,10 @@ class Regressor(BaseEstimator):
         model_scalar_2 = Flatten()(model_scalar_2)
         model_scalar_2 = Dense(32, kernel_regularizer=l2(self.l2_weight))(
             model_scalar_2)
+        model_scalar_2 = Dropout(0.2)(model_scalar_2)
         model_scalar_2 = Dense(16, kernel_regularizer=l2(self.l2_weight))(
             model_scalar_2)
-        model_scalar_2 = Dropout(0.2)(model_scalar_2)
+
         model_scalar_2 = Activation("tanh")(model_scalar_2)
 
         model_scalar_total = Concatenate()([model_scalar, model_scalar_2])
